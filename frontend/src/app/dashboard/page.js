@@ -1,27 +1,120 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { ethers } from "ethers";
 import { useWallet } from "../../context/WalletContext";
+
+// Live HashKey Testnet Production Addresses (Chain ID 133)
+const VAULT_ADDR = "0x7E2130deE7c8716b6188255c4800486eD708862E";
+const USDT_ADDR = "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB";
+const REGISTRY_ADDR = "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7";
+
+const VAULT_ABI = [
+  "function userInfo(address) view returns (uint256 stakedAmount, uint256 rewardDebt, uint256 cumulativePaidFees)",
+  "function pendingYield(address) view returns (uint256)",
+  "function totalStaked() view returns (uint256)",
+  "function deposit(uint256 amount)",
+  "function withdraw(uint256 amount)"
+];
+
+const USDT_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function approve(address spender, uint256 amount)",
+  "function mint(address to, uint256 amount)"
+];
+
+const REGISTRY_ABI = [
+  "function hasValidSBT(address) view returns (bool)",
+  "function getVerificationTier(address) view returns (uint256)"
+];
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isConnected, account, disconnectWallet } = useWallet();
+  const { isConnected, account, provider, disconnectWallet } = useWallet();
+
+  // Real On-Chain State (Zero Mock Data)
+  const [stakedBalance, setStakedBalance] = useState("0.00");
+  const [pendingReward, setPendingReward] = useState("0.00");
+  const [walletUSDT, setWalletUSDT] = useState("0.00");
+  const [clearanceTier, setClearanceTier] = useState("UNVERIFIED");
+  const [isLoading, setIsLoading] = useState(true);
+  const [txPending, setTxPending] = useState(false);
+
   const [telemetryLogs, setTelemetryLogs] = useState([
-    { id: 1, timestamp: new Date().toLocaleTimeString(), agent: "System", level: "INFO", message: "Institutional Custody & Compliance Engine Active." }
+    { id: 1, timestamp: new Date().toLocaleTimeString(), agent: "System", level: "INFO", message: "Connecting to HashKey Testnet RPC (Chain ID 133)..." }
   ]);
-  const [stakedBalance, setStakedBalance] = useState("10,000.00");
-  const [pendingReward, setPendingReward] = useState("100.00");
+
+  const addLog = useCallback((agent, level, message) => {
+    setTelemetryLogs((prev) => [
+      { id: Date.now() + Math.random(), timestamp: new Date().toLocaleTimeString(), agent, level, message },
+      ...prev.slice(0, 49)
+    ]);
+  }, []);
+
+  // Fetch Live On-Chain Data from HashKey Chain Testnet
+  const fetchOnChainData = useCallback(async () => {
+    if (!account) return;
+    try {
+      const rpc = new ethers.JsonRpcProvider("https://testnet.hsk.xyz");
+      const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, rpc);
+      const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, rpc);
+      const regContract = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, rpc);
+
+      const [uInfo, pYield, bal, sbtValid, tier] = await Promise.all([
+        vaultContract.userInfo(account),
+        vaultContract.pendingYield(account),
+        usdtContract.balanceOf(account),
+        regContract.hasValidSBT(account),
+        regContract.getVerificationTier(account)
+      ]);
+
+      const rawStaked = uInfo[0] ?? uInfo.stakedAmount ?? 0n;
+      const fmtStaked = Number(ethers.formatUnits(rawStaked, 6)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const fmtYield = Number(ethers.formatUnits(pYield, 6)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const fmtBal = Number(ethers.formatUnits(bal, 6)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      setStakedBalance(fmtStaked);
+      setPendingReward(fmtYield);
+      setWalletUSDT(fmtBal);
+      setClearanceTier(sbtValid ? `TIER ${tier.toString()} VERIFIED` : "UNVERIFIED");
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Live RPC sync error:", err);
+      setIsLoading(false);
+    }
+  }, [account]);
 
   // Authentication Gate Redirect Enforcement
   useEffect(() => {
     if (!isConnected) {
       router.replace("/");
+    } else {
+      fetchOnChainData();
+      addLog("Orchestrator_Agent", "INFO", `Custody account synchronized with HashKey Testnet reserve.`);
     }
-  }, [isConnected, router]);
+  }, [isConnected, router, fetchOnChainData, addLog]);
+
+  // Connect to live SSE telemetry stream if backend active
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const evtSource = new EventSource("http://localhost:8000/api/v1/telemetry/stream");
+    evtSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        addLog(data.agent || "AP2_Engine", data.level || "INFO", data.message || event.data);
+      } catch {
+        addLog("AP2_Engine", "INFO", event.data);
+      }
+    };
+    evtSource.onerror = () => {
+      // Backend SSE disconnected (using direct RPC polling)
+    };
+    return () => evtSource.close();
+  }, [addLog]);
 
   if (!isConnected) {
-    return null; // Prevent flash of unauthorized content
+    return null; // Prevent unauthorized content flash
   }
 
   const handleDisconnect = () => {
@@ -34,23 +127,91 @@ export default function DashboardPage() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const addLog = (agent, level, message) => {
-    setTelemetryLogs((prev) => [
-      { id: Date.now(), timestamp: new Date().toLocaleTimeString(), agent, level, message },
-      ...prev.slice(0, 49)
-    ]);
+  // Real Transaction Handlers
+  const handleDeposit = async () => {
+    if (!provider || !account) return;
+    setTxPending(true);
+    addLog("Orchestrator_Agent", "INFO", `Initiating regulatory identity pre-check for ${formatAddress(account)}...`);
+    try {
+      const signer = await provider.getSigner();
+      const regContract = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, signer);
+      const valid = await regContract.hasValidSBT(account);
+      
+      if (!valid) {
+        addLog("SBTRegistry", "WARNING", "Transaction Blocked - Missing Regulatory Identity SBT");
+        alert("Transaction Blocked: Your account lacks a valid KYC Regulatory Identity SBT on HashKey Testnet.");
+        setTxPending(false);
+        return;
+      }
+
+      const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, signer);
+      const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
+      const depositAmt = ethers.parseUnits("100", 6);
+
+      // Check balance & auto-faucet if needed
+      const bal = await usdtContract.balanceOf(account);
+      if (bal < depositAmt) {
+        addLog("mockUSDT", "INFO", "Requesting testnet faucet mint (+1,000 USDT)...");
+        const mintTx = await usdtContract.mint(account, ethers.parseUnits("1000", 6));
+        await mintTx.wait();
+        addLog("mockUSDT", "INFO", "Testnet USDT minted successfully.");
+      }
+
+      addLog("mockUSDT", "INFO", "Requesting token allowance approval...");
+      const approveTx = await usdtContract.approve(VAULT_ADDR, depositAmt);
+      await approveTx.wait();
+
+      addLog("CompliantYieldVault", "INFO", "Broadcasting deposit transaction to HashKey Chain...");
+      const depTx = await vaultContract.deposit(depositAmt);
+      await depTx.wait();
+
+      addLog("CompliantYieldVault", "INFO", `Successfully deposited 100.00 USDT into institutional reserve.`);
+      await fetchOnChainData();
+    } catch (err) {
+      console.error(err);
+      addLog("Orchestrator_Agent", "WARNING", `Execution cancelled or reverted: ${err.shortMessage || err.message}`);
+    } finally {
+      setTxPending(false);
+    }
   };
 
-  const handleDeposit = () => {
-    addLog("CompliantYieldVault", "INFO", `Deposit initiated for ${account} (SBT Gate Verified)`);
+  const handleAccrueYield = async () => {
+    setTxPending(true);
+    addLog("Orchestrator_Agent", "INFO", "Polling live network RPC for O(1) accumulator updates...");
+    await fetchOnChainData();
+    addLog("CompliantYieldVault", "INFO", "On-chain state index synchronized.");
+    setTxPending(false);
   };
 
-  const handleAccrueYield = () => {
-    addLog("Orchestrator_Agent", "INFO", "Accruing automated institutional yield distribution (+100 USDT)");
-  };
+  const handleTriggerPayout = async () => {
+    if (!provider || !account) return;
+    setTxPending(true);
+    addLog("Mandate_Execution_Agent", "INFO", "Authorizing EIP-712 compliant payout mandate...");
+    try {
+      const signer = await provider.getSigner();
+      const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
+      const uInfo = await vaultContract.userInfo(account);
+      const staked = uInfo[0] ?? uInfo.stakedAmount ?? 0n;
 
-  const handleTriggerPayout = () => {
-    addLog("Mandate_Execution_Agent", "INFO", "AP2 EIP-712 Mandate triggered. Net payout settled.");
+      if (staked === 0n) {
+        addLog("CompliantYieldVault", "WARNING", "Settlement aborted: Zero active custody stake.");
+        alert("Settlement Aborted: Zero active custody stake to withdraw.");
+        setTxPending(false);
+        return;
+      }
+
+      addLog("CompliantYieldVault", "INFO", "Broadcasting withdrawal harvest transaction...");
+      const tx = await vaultContract.withdraw(staked);
+      await tx.wait();
+
+      addLog("CompliantYieldVault", "INFO", "Institutional payout settled directly to custody account (net of 3% fee reserve).");
+      await fetchOnChainData();
+    } catch (err) {
+      console.error(err);
+      addLog("Mandate_Execution_Agent", "WARNING", `Settlement failed: ${err.shortMessage || err.message}`);
+    } finally {
+      setTxPending(false);
+    }
   };
 
   return (
@@ -62,15 +223,16 @@ export default function DashboardPage() {
             H
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-900">HashStaking Console</span>
-          <span className="text-xs px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-mono font-semibold border border-emerald-200">
-            Clearance Tier: VERIFIED
+          <span className={`text-xs px-2.5 py-0.5 rounded-md font-mono font-semibold border ${clearanceTier.includes("VERIFIED") ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
+            Clearance: {clearanceTier}
           </span>
         </div>
 
         <div className="flex items-center space-x-4">
           <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 shadow-2xs flex items-center space-x-3">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-mono text-emerald-700 font-bold">{formatAddress(account)}</span>
+            <span className="text-xs font-mono text-slate-500 mr-1">Custody Balance:</span>
+            <span className="text-xs font-mono text-emerald-700 font-bold">{walletUSDT} USDT</span>
           </div>
           <button
             onClick={handleDisconnect}
@@ -83,22 +245,32 @@ export default function DashboardPage() {
 
       {/* Main Enterprise Light Layout */}
       <main className="flex-1 p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
-        {/* Left Column: Staked Reserve & Control Cap */}
+        {/* Left Column: Live On-Chain Reserve & Control Cap */}
         <div className="lg:col-span-2 flex flex-col space-y-8">
           {/* Executive Metrics Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200/80 relative overflow-hidden shadow-md shadow-slate-200/50">
-              <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Active Custody Stake</div>
-              <div className="text-4xl font-extrabold text-slate-900 font-mono tracking-tight">{stakedBalance} <span className="text-lg text-slate-500 font-sans font-semibold">USDT</span></div>
+              <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center justify-between">
+                <span>Active Custody Stake</span>
+                {isLoading && <span className="text-[10px] text-emerald-600 animate-pulse font-mono">SYNCING RPC...</span>}
+              </div>
+              <div className="text-4xl font-extrabold text-slate-900 font-mono tracking-tight">
+                {isLoading ? "..." : stakedBalance} <span className="text-lg text-slate-500 font-sans font-semibold">USDT</span>
+              </div>
               <div className="mt-4 flex items-center text-xs text-emerald-700 font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>
-                <span>Fully Segregated Institutional Reserve</span>
+                <span>Live Segregated On-Chain Reserve</span>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-2xl border border-slate-200/80 relative overflow-hidden shadow-md shadow-slate-200/50">
-              <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Net Accrued Yield</div>
-              <div className="text-4xl font-extrabold text-emerald-600 font-mono tracking-tight">+{pendingReward} <span className="text-lg text-slate-500 font-sans font-semibold">USDT</span></div>
+              <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center justify-between">
+                <span>Net Accrued Yield</span>
+                {isLoading && <span className="text-[10px] text-emerald-600 animate-pulse font-mono">DERIVING O(1)...</span>}
+              </div>
+              <div className="text-4xl font-extrabold text-emerald-600 font-mono tracking-tight">
+                +{isLoading ? "..." : pendingReward} <span className="text-lg text-slate-500 font-sans font-semibold">USDT</span>
+              </div>
               <div className="mt-4 flex items-center text-xs text-slate-500 font-medium">
                 <span>Automated Real-Time Settlement</span>
               </div>
@@ -110,22 +282,24 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-xl font-bold text-slate-900 mb-2">Institutional Treasury Operations</h2>
               <p className="text-sm text-slate-600 mb-8 leading-relaxed">
-                Execute instant corporate deposits, monitor automated yield distributions, and authorize regulatory-compliant payouts.
+                Execute instant corporate deposits, monitor automated yield distributions, and authorize regulatory-compliant payouts directly against HashKey Testnet contracts.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={handleDeposit}
-                className="py-4 px-6 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-900 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs active:scale-95"
+                disabled={txPending}
+                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200 text-emerald-900 active:scale-95"}`}
               >
-                <span>[ Deposit ]</span>
+                <span>{txPending ? "[ Processing... ]" : "[ Deposit ]"}</span>
                 <span className="text-[10px] font-semibold text-emerald-600 group-hover:text-emerald-700">Verified Identity Gate</span>
               </button>
 
               <button
                 onClick={handleAccrueYield}
-                className="py-4 px-6 rounded-xl bg-sky-50 hover:bg-sky-100/80 border border-sky-200 text-sky-900 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs active:scale-95"
+                disabled={txPending}
+                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-sky-50 hover:bg-sky-100/80 border-sky-200 text-sky-900 active:scale-95"}`}
               >
                 <span>[ Accrue Yield ]</span>
                 <span className="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">Automated Distribution</span>
@@ -133,9 +307,10 @@ export default function DashboardPage() {
 
               <button
                 onClick={handleTriggerPayout}
-                className="py-4 px-6 rounded-xl bg-purple-50 hover:bg-purple-100/80 border border-purple-200 text-purple-900 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs active:scale-95"
+                disabled={txPending}
+                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-purple-50 hover:bg-purple-100/80 border-purple-200 text-purple-900 active:scale-95"}`}
               >
-                <span>[ Trigger Payout ]</span>
+                <span>{txPending ? "[ Settling... ]" : "[ Trigger Payout ]"}</span>
                 <span className="text-[10px] font-semibold text-purple-600 group-hover:text-purple-700">Compliant Settlement</span>
               </button>
             </div>
@@ -149,12 +324,12 @@ export default function DashboardPage() {
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="text-sm font-bold tracking-tight text-slate-900 font-mono">Live Activity & Audit Stream</span>
             </div>
-            <span className="text-[10px] font-mono text-slate-400">/api/v1/telemetry/stream</span>
+            <span className="text-[10px] font-mono text-slate-400">Chain ID: 133</span>
           </div>
 
           <div className="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-3 max-h-[500px] bg-slate-50/30">
             {telemetryLogs.map((log) => (
-              <div key={log.id} className="p-3.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs space-y-1.5">
+              <div key={log.id} className="p-3.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs space-y-1.5 animate-fadeIn">
                 <div className="flex items-center justify-between text-[10px] text-slate-400">
                   <span className="text-sky-700 font-bold">[{log.agent}]</span>
                   <span>{log.timestamp}</span>
@@ -167,7 +342,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="p-3 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-500 text-center font-mono font-medium">
-            ● Enterprise Audit Stream Connected
+            ● Connected to Live HashKey Testnet Contracts
           </div>
         </div>
       </main>
