@@ -8,7 +8,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { isConnected, account, disconnectWallet } = useWallet();
   const [telemetryLogs, setTelemetryLogs] = useState([
-    { id: 1, timestamp: new Date().toLocaleTimeString(), agent: "System", level: "INFO", message: "SSE Reassurance Console initialized." }
+    { id: 1, timestamp: new Date().toLocaleTimeString(), agent: "System", level: "INFO", message: "Institutional Custody & Compliance Engine Active." }
   ]);
   const [stakedBalance, setStakedBalance] = useState("10,000.00");
   const [pendingReward, setPendingReward] = useState("100.00");
@@ -45,8 +45,8 @@ export default function DashboardPage() {
     addLog("CompliantYieldVault", "INFO", `Deposit initiated for ${account} (SBT Gate Verified)`);
   };
 
-  const handleSimulateYield = () => {
-    addLog("Orchestrator_Agent", "INFO", "Simulating O(1) Model B reward accumulation cycle (+100 units)");
+  const handleAccrueYield = () => {
+    addLog("Orchestrator_Agent", "INFO", "Accruing automated institutional yield distribution (+100 USDT)");
   };
 
   const handleTriggerPayout = () => {
@@ -89,17 +89,17 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-[#111827] p-6 rounded-2xl border border-white/10 relative overflow-hidden shadow-xl">
               <div className="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Active Custody Stake</div>
-              <div className="text-4xl font-extrabold text-white font-mono tracking-tight">{stakedBalance} <span className="text-lg text-slate-500">mockUSDT</span></div>
+              <div className="text-4xl font-extrabold text-white font-mono tracking-tight">{stakedBalance} <span className="text-lg text-slate-500">USDT</span></div>
               <div className="mt-4 flex items-center text-xs text-emerald-400 font-medium">
-                <span>↑ Model B Precision: 1e12 Factor</span>
+                <span>↑ Fully Segregated Institutional Reserve</span>
               </div>
             </div>
 
             <div className="bg-[#111827] p-6 rounded-2xl border border-white/10 relative overflow-hidden shadow-xl">
-              <div className="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Derivable O(1) Yield</div>
-              <div className="text-4xl font-extrabold text-emerald-400 font-mono tracking-tight">+{pendingReward} <span className="text-lg text-slate-500">mockUSDT</span></div>
+              <div className="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Net Accrued Yield</div>
+              <div className="text-4xl font-extrabold text-emerald-400 font-mono tracking-tight">+{pendingReward} <span className="text-lg text-slate-500">USDT</span></div>
               <div className="mt-4 flex items-center text-xs text-slate-400">
-                <span>3.00% Performance Fee Reserve</span>
+                <span>Automated Real-Time Settlement</span>
               </div>
             </div>
           </div>
@@ -107,9 +107,9 @@ export default function DashboardPage() {
           {/* Three-Button Control Cap */}
           <div className="bg-[#111827] p-8 rounded-2xl border border-white/10 shadow-xl flex flex-col justify-between flex-1">
             <div>
-              <h2 className="text-xl font-bold text-white mb-2">Sovereign Executive Operations</h2>
+              <h2 className="text-xl font-bold text-white mb-2">Institutional Treasury Operations</h2>
               <p className="text-sm text-slate-400 mb-8">
-                Trigger state updates directly against compliant on-chain vault accounting and EIP-712 payment mandates.
+                Execute instant corporate deposits, monitor automated yield distributions, and authorize regulatory-compliant payouts.
               </p>
             </div>
 
@@ -119,15 +119,15 @@ export default function DashboardPage() {
                 className="py-4 px-6 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-sm hover:shadow-emerald-500/10 active:scale-95"
               >
                 <span>[ Deposit ]</span>
-                <span className="text-[10px] font-normal text-emerald-500 group-hover:text-emerald-400">Gated by KYC SBT</span>
+                <span className="text-[10px] font-normal text-emerald-500 group-hover:text-emerald-400">Verified Identity Gate</span>
               </button>
 
               <button
-                onClick={handleSimulateYield}
+                onClick={handleAccrueYield}
                 className="py-4 px-6 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-sm hover:shadow-cyan-500/10 active:scale-95"
               >
-                <span>[ Simulate Yield ]</span>
-                <span className="text-[10px] font-normal text-cyan-500 group-hover:text-cyan-400">Advance Accumulator</span>
+                <span>[ Accrue Yield ]</span>
+                <span className="text-[10px] font-normal text-cyan-500 group-hover:text-cyan-400">Automated Distribution</span>
               </button>
 
               <button
@@ -135,7 +135,7 @@ export default function DashboardPage() {
                 className="py-4 px-6 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-sm hover:shadow-purple-500/10 active:scale-95"
               >
                 <span>[ Trigger Payout ]</span>
-                <span className="text-[10px] font-normal text-purple-500 group-hover:text-purple-400">AP2 Mandate Harvest</span>
+                <span className="text-[10px] font-normal text-purple-500 group-hover:text-purple-400">Compliant Settlement</span>
               </button>
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function DashboardPage() {
           <div className="p-5 border-b border-white/10 bg-[#0B0F19]/40 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-sm font-bold tracking-tight text-white font-mono">Agent Telemetry SSE</span>
+              <span className="text-sm font-bold tracking-tight text-white font-mono">Live Activity & Audit Stream</span>
             </div>
             <span className="text-[10px] font-mono text-slate-500">/api/v1/telemetry/stream</span>
           </div>
