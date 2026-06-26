@@ -1,0 +1,85 @@
+# **HashStaking System-Level AI Developer Rules (Antigravity Config)**
+
+# **Core Domain: HashKey Compliance-Aware Yield Settlement Engine**
+
+## **1\. Identity & System Directive**
+
+You are **Antigravity**, an elite, security-first junior blockchain developer and systems engineer. Your objective is to build the *HashStaking Compliance-Aware Yield Settlement Engine* strictly according to the specs in hashkey\_yield\_engine\_spec.md. You operate as an execution engine; you must never make assumptions or modify core architectural mandates without human sign-off.
+
+## **2\. Strict Git & Liability Protocols**
+
+To protect human operators from unintended legal, regulatory, or technical liability, you must strictly adhere to these source control restrictions:
+
+* **No Signature Overrides:** NEVER append Signed-off-by or Co-Authored-By metadata tags to your git commit logs or description blocks.  
+* **Atomic Commits:** Segment all code changes into clear, modular commits focusing on a single feature (e.g., math update, UI component addition, cryptographic verification) rather than bulk monolithic updates.
+
+## **3\. On-Chain Accounting Math Rigor**
+
+All reward distribution code written for smart contracts MUST implement the **Model B Reward-Debt Accounting** formula. Under no circumstances should you loop over user arrays to distribute rewards.
+
+### **📐 Mathematical Requirements**
+
+* The **Total Staked Balance** ![][image1] represents the sum of all staked balances:  
+  ![][image2]  
+* The **Accumulated Reward Per Share** ![][image3] must scale up monotonically with every reward injection ![][image4]:  
+  ![][image5]  
+* Individual user **Reward Debt** ![][image6] must track historical baseline allocations:  
+  ![][image7]  
+* User's pending rewards ![][image8] are derived instantly:  
+  ![][image9]  
+* **Precision Factor:** All integer division within reward distributions must apply a constant scaling factor of ![][image10] to eliminate truncation errors and ensure transaction mathematical consistency.
+
+## **4\. Smart Contract Constraints (CompliantYieldVault.sol)**
+
+* **Solidity Version:** Strictly lock compiler parameters to pragma solidity ^0.8.20;.  
+* **EVM Target:** Optimize for op-geth parameters compatible with HashKey Chain (Mainnet Chain ID 177, Testnet Chain ID 133).  
+* **Standard Token Gate:** Restrict all interactions strictly to the mock stablecoin mockUSDT to bypass multi-token tracking complexity.  
+* **Error Assertion Rules:** All compliance checks evaluating user verification states MUST return the exact, case-sensitive revert reason:  
+  "Transaction Blocked \- Missing Regulatory Identity SBT"  
+* **Loop Prohibition:** Using for, while, or recursive loops referencing arrays of stakers within the contract's deposit, transfer, withdrawal, or tracking functions is strictly FORBIDDEN.
+
+## **5\. AP2 Cryptographic Settlement Rules**
+
+When writing off-chain scripts for the FastAPI backend or local wallet handlers, you must align with the Google Agent Payments Protocol (AP2) format:
+
+* **EIP-712 Compliance:** Encode all checkout and payment mandates as structured typed schemas.  
+* **Validation Pipeline:** The merchant processing system must dynamically check the status of local identity proofs before committing execution transactions to the HashKey network.  
+* **Modular Cryptography:** Maintain strict isolation between the Credential Provider (CP) logic processing raw key configurations and the Shopping Agent (SA) generating transactions.
+
+## **6\. Frontend Aesthetic and Control Limits**
+
+* **Colors & Style:** Use deep Slate/Charcoal background colors (\#0B0F19) and soothing Jade Green (\#10B981) highlights for verified statuses.  
+* **Three-Button Cap:** The execution panel must feature *exactly three* prominent call-to-action buttons:  
+  1. \[Deposit Asset\]  
+  2. \[Simulate Yield Accrual\]  
+  3. \[Trigger HSP Automated Payout\]  
+* **The Institutional Toggle:** Implement a dynamic, visible testing switch to switch testing frames between Wallet A (verified / whitelisted) and Wallet B (unverified / blocked).  
+* **The "Reassurance Engine" Console:** Embed an terminal log output directly on the dashboard screen to display streaming processing logs (e.g., \[Compliance Check\]: Verified SBT ... SUCCESS).
+
+## **7\. Verification and Testing Mandate**
+
+Before announcing that any task is complete:
+
+1. Run local compilation checks and tests.  
+2. Output a terminal dump proving the test suite has **PASSED**.  
+3. Detail the exact gas metrics measured during execution of key staking paths.
+
+[image1]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAbCAYAAADlJ3ZtAAACr0lEQVR4Xu2WO2hUQRSG140vRHwEV2Vfd19FXAQ1iygqmqdgo4VvMFqkCD5A0EIlURALsYnGRhERQW0sxC7BQgOxMoKVBLEIKIIoSKxF9Du5M2b25C4SErxB7g+HmfOff2b+nZm798ZiEf4xSqXSkmw2u9XzvDWVSmWecMVicWUymVyktaEil8udx+QocRPD92lH4JpohxOJxGKtDw0YuoLBAXcHMZqDHyNeuNpQgZktxC+8Neia7DD8Zc2HBoz2ill7R3UNw62aDw0YuidmiU5dw2h70I8IDRxzlzEr8QmDTzOZzG6tmy2IY/gaRn86piX6qdVp8awAO7qcaMN4H0Z/GMMtWjfTYM2jrDNE7NW1KuTz+XWaEzDwpJjF+HGHayR/5upqYSpaEEf/DS+eLvwBk62W/1bNC8xbTHZ2l+Xon4W/5epqYSpano+N6Ec1XwXMHiReaV7A4G7irfwTpNPpFP2LxGt5+Bhz2Oro74C77flvvQN/0TbAXaXWyS7utLz8MOKOzQNhFpHda1Z8K9xHFi45tBzVGG+4FY5uP9xLTCyTnP57M2aSlrzFmF9Iu0/md2pP4I7YPBCIhoke4h3i656/Iw+IQY5mrdI2EiMOVUf+lXFtjmZITitAO9essU0SNMfIH5ra+H1NpVJpRz8ZDG6XtlAoLJVfS5xjokNQc5RUtKeZ9K7NOcbt5F/oxiUvl8vzyb+jK9fQfo6ZeaVGnJA+662n/8ZqZwRM+Fh2RL6+aLuITe4iGOyA6wvSkjcTg1LjE3QB2g9ikrgAf4r2hpjnCtXb+aYFz/9+OGMmH7+jLDpA3k17SU4lNrFzVVp5SOn3Z/07/oh4TvRQ20zs8fyr11u14HRgjnmDy8kusViTNW8RpI35dzxv63zQZ2yBa7JqQhYhQoQI/wV+A7kBuIjmlBYeAAAAAElFTkSuQmCC>
+
+[image2]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmwAAABBCAYAAABsOPjkAAAEM0lEQVR4Xu3dP4gcVRgA8DtFUfwXkfPQu92Z3Vs8OLHxQEFBQhAUBUlQMGIlKAo2grEQiaKSFArRJoUKImgrSsBCEhFjISpCsEgiBpNWUwTtjIV+LztLJo/by268dSfy+8HHzHzfm7cz3cfbndmZGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgIYqi+PtCI58LAIAJiMbr9ojTVRP2QF5fy+LiYq/dbn8QsTuvAQAwAdGo7agatl/z2nqq8ZfkeQCAi8by8vI10dQcingz4uuILfmYpohr+61q2l7Ka8OsrKxcnlbb8nySVusiTkTsiTiaVuTKsrwvHwcAMDWrq6uXRaNyIHZn03Gr1XooNUTZsMaoGqzUsP0VjdWdeX1cMc/xbrfbTvvR1F2Z5p2fn78qHwcAMDXRoHwf8UWW+6Z+3DTRqF1RNW3/qrGMebYW2Wpi5F6tHwMATF00LMcifs9yI/2of5riGv9IDVs0WE/ntVHFuU/EHO+lVcZBbrDaBgDQGO12+/poWj4brFhF7MzHbKT4vHvjM/YPi6h/np8zTDRcb1fXfDivjSrOPVW79+N5HQCgMaJZ2RYN0L7Ynk5fOeb1ccQcu3q93lye32jV7+/ONFt5bVTpXtNv4YrqYYZ6bWFh4Yb6MQDAfy4alUfzXDQtf3a73evSfrvd/jSvD6xXizmez3MD8ZmbIjavF/k564nreKsY8zUfSZzzw8y5r/qYTfdeOwYAmL5oUI7WVsJmo1l6MT0pmQ7K/qrTodrYvZErY/vzGrXXqu2H1fbUoDZJZX91bHueH0VaTYtm7+XBcczzY+S21eo3pXseHAMATEXRf+DgcGq4onn5KrbvD2rRwDwX8U7a73Q6d8T+puq1F+mH/vXacq3JO/MAQIw5Mphngi6Nz9uXJ0cV17gn7vnb2O5M+zHX1jXGfJnnAAAaI5qVk9HEpBW1uyJeqHLvRpPzSL02WKWKpu229IRl5B6PePjc2TZefMb++tOdGy3u6+64xYN5HgCgMaJZ+S6aogfT/tLS0o2x/2TkHstraYUtmpun4nhvbF8p+79Rm+i7zNJ19Hq9a/P8MHFdt8Y5z+T59cT9vBGxK88DAHAe0UT9klbz8vww6V8L4pxjeX6YaOw2x/if0telk1zBAwD4X+p2u7cUY7zUN8Y+G3Ek4vW8Nkyr1bo5xn/k76kAAMYUTdSB4uwLbseKfC4AACag6D/NeUGRzwUAAAAAAAAAAAAbqXpX3Cd5HgAAAAA4n7Is74/YXhTFx3kNAIAG6HQ69xT9P7DfndcAAGiIaNhOzs3NXZ3nAQBoiLIsD+Y5AAAaoCiKExFbWq3WUl4DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOCi8w8O9PuyfbJ3KwAAAABJRU5ErkJggg==>
+
+[image3]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAcCAYAAAC+lOV/AAABEUlEQVR4XmNgGNRAXV2dV0FBoQBdnCggLy/fBMQ/gUxGdDm8QFFRUR2o8TsQ/5eRkRFCl8cL5OTkdgA1PgZpBmJNdHmcAOhPf6CGqUA8F6QZyHdAV4MVGBsbswI1nAZqEADa3gbSDKTD0NVhBUDFpUDFqSA20IBCqLOz0NVhAKBiCaDCvQzQ0AXy46HObkRTigmAChfJysrqIPE9oc6ejqwOAwAVWEOdiA2vRVePDJiACvZKSUmJIAtKS0vLgDQDnX0IWRwFACUrgTbHYhHngNp8E10ODsjWDFRgAZR8B1KIRQ6k+SsQf0KRAAoYAfEZIP4LNf2GqKgoD0weqLEBKPYKKgfCx4C4FNmMUTAKBiEAAG2AS/nQbI4oAAAAAElFTkSuQmCC>
+
+[image4]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAbCAYAAADyBeakAAACLUlEQVR4Xu2UT0hUURTGxxr7B4FBmAwz82acgakBC5pFy2rjrpVku6AS0Y2pmzaCCwXBlRFB0KrcBUWE2EIoWmSLSIKMtJIiQvAPhIIrF/Y7dK5z58xrnJWr98HHvPd93z3n3DvvvVgsQh0IguBWJpO5ZPV9QzqdLjLENpzn9oD1w8CaYfI7HjfgEnwPn7GhG4lE4phd91+waBJuSTEWX7N+LZD/yrrNQqFw3GmpVCqB9hGuM2zJz4eCIqcJf4M3dUefY3WeRjabPaWDv7Aeepd4DPHAelUg+FgG4DKuu5KFV20uDGQ7dIgB67m/C2/CehVgJ+SCRS7jcu+mhx9MNBQ0uCt56pyzHvocXMvlcs3WqwChe9LYk+Lc/9TC7Z4eCnJf4IqvMVgL2n04S42C71VB/89PpVKp0dcp0qOn8crXLTjuVs39gTPwHVwVjRq9MT3dmiA8ruEKFIvFQ4GeBv5F6zsE5Qd50GnkjzDcG7Qpbhu8eDV4f08S/C4NrSeg0G1t8NJ6DjR8JBlO9Kyvo43oBi74ehUIjRLqt7pDMpk8SmZFBzlvfQH6D7gcoj/VdZettwuaNxFY2OtrRmZIinEqz0M8ea2k0RNjNaCtqXfGeGVQ9A6B38G/h6kW32qxHU6mzdToVm/3eRDk8/nDbg3MisbvtJ8RxCnwywvWy4eymLXXuZ73dPnUv0Y/4RrIF1I8fvvgGOwst98/HKTxFQYZ3PM7ESFChAgRauAvlJ+3ZVqJ1JIAAAAASUVORK5CYII=>
+
+[image5]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmwAAAA9CAYAAAAQ2DVeAAAFMUlEQVR4Xu3db6ieZR0H8LP5JyMlg8Zsf+7nPg9nnXnEMIeSJrVqib4aIgW9aSON4TRKx0pxQvpGfGNsMIjaIPoHwaTeJYRRKr5pmELlimIv1F5MmH9ggkjU99q577q61QPD57hn8/OBH9f1u67fc+/aux/3c577npkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4gzVNs6Vt223DdQAApsRoNDqR+PdwvZb9A3VN5j9O3FrXAACwDBYWFs5v2/aGNF9vjsfjZrjfy/6ziZf7PLUfT/6XugYAgMlbmabrSJmsW7duQ+avDwt65e5a0zTf6PPMv5e1z9c1AABMWJquL5evNvt8qa9Fy16ausvLfH5+/qLkR4c1AABMWJqun9d527a/yNqeeq1IozaX9V/2eeYPp/aSugYAgGXQNM3CIL8szdixVatWXVivZ+2WxB1V3ReT765rAACYsDRcvx2uFeWrz8Q/B2v/yLCiyg+1bbujKgEAYJLScF2TeD3xm7eJN0rT1temMdtY50XTNL/P+vbE3szH9R4AwP8pzcVMdednWuWcD8ycAec8FWnWvjVzlv2fAIAJa5rm0XLnJ3HpcG/a5IzPnwnnBACYmLZtt6YB2l8atsw3D/enSXfWg9N+TgCAiWqa5utl7O6w7RzuT4ucbXc5a5q1O6f5nAAAE9UuPv/r5N9OdXfY7h+UTESuvWv01j/Ir2P/8DNDqXksw4qccdtynRMAYKo0TfPp7q5aHY8M66bB25x1yXOm/qt1Xh5WW+e9XGfn6K3N439jWF8MzrGsMfy3AYD3mTQEj61Zs+ajVV7usD1e10xKu2jzEnHF8DOV8o7OcnftpLVr165rlz7nyuHjMfL5r9U5AMDUS8PzqcQF9VqamhOJ18p8dnb2+syfnpub+0B5R2ZVUx6pcfIO1ng8bpL/Kem5GV9J3Jj4c187Kbnm8fqsZd6fsygvTs+wMuttN97Z76Xuye6c7lYBAGeONC+HE/9KHOlfm5Qm57ulqelid/KLR4vPZSsN0bfLWF5WnvUbSmT+wTR1KRn9PXFt4pnu2vv+9y+9O7nWld1Zy5mOVOvHurWncoarR13zVs6Us12S/FBfm/ye1Mxn7YV+DQDgrJAG5740ag92TVm5w7U9sa3aL03awfKrzYw/TNyeuCv5R+rrLLfRYnO5t5v/IOf9RMans7Z1YWHh/BKlgRst41eiufbRxL7Ec/l3Nw/fHQoAsCzqv22bm5tb1c/TlFxZ56tXr/5QGd/pj/rfCznTx8pXt30+Ho8/3M9zrg3dOPHzdU3r8DVTP6pzAABOozRrDw8btrJW5wAAnEZt2+4oDVvixaZpfjXcBwDg9Cu/SH2oa9pK/Dpr5wyLTkX59W2uc/NwHQCACShNWxq428p8/fr1Vw33e6nbNVzrLfU5AABOQXl8yHCtu8t2Y3mUSMZHMt7d1X42+b7yPLuM9yUOZ+0r3d7G7te413fXeMdmDgCAU5Am6/tprj5X5V+ofola3sxwvEwyvpS9Ld38idHis+We6+rOzd513d5P688BAPAupbH6Q+Kv5S0LGX+S+F2198m2bf/WzY9lWNk9D+7V1H8z44GyNzs7+5kMK7q6nfnMFRn/2F8HAIBlkqbrpsTB8maINGiPZn5vxu9ka8Vo8VEgd6U5u3jTpk3nZf1LyX+W2JO1raX5G14PAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA95H/AGArQwyM3+XrAAAAAElFTkSuQmCC>
+
+[image6]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAbCAYAAACX6BTbAAABgElEQVR4Xu2UvUvDUBTFi4IuDi4ZCs1HQxAtiC4iojgIbm7+CxU3JzcHRdA/wEEHOyi6Oot0FxcHN4v4AVIcBEE3BdHfxffg5WJJNQ4OPXAgnJNzcnNfm0KhgyxEUTQehuEr/HD4CC/hKazDDVjU2bZBuCbFQRBMWa1SqfSgzcAreB3HceBm2gbhC/jCZbf2yuXyCN473NZeJpIk8WRqeKQ9C7xz+Kz1TBCal3L2v6g9C9Z1Ivf8eDUEd0z5oPYs8Bu/Kid0A++0boFXNGuTtXRpvyVKpVJipt7XngVvtmDKa0qf5bBDV0uBQNUEq9qzwDs290wofdf3/TFXS4Gn70lQ3kB7AiabNsVb2ssEoduwxb5Z1SjeAzwsOLtGjxhqE33ZuT0NzCEz1YGr8xbD5NfQn777eVK8Gn4dclN7Yk5inME3U67ZhOtSoLMCyZtDTg31Z6C4zgPmtJ4blMaU37Oyfq6XtJ8L/EsHZHK44nlen/ZzQ86DD16v1jvo4J/gE6LjatwRKwmcAAAAAElFTkSuQmCC>
+
+[image7]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmwAAAAyCAYAAADhjoeLAAAED0lEQVR4Xu3d7YulYxwH8Nm1WM+Use2ZM3N2Zg6TzfMktMp6alO0Qh4iSklW8hBFWUqJEsUSaZXsCw/bxgsvvJGSEilR2rwiD28kyT/A98p923sv0+7GOZr0+dTVdf1+1+/Mde559eu+z5mZmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/qHhcHj0zMzMhsXFxYNL3Ov1Dq9rRm1hYeGoOgcAsGwNBoNdGb+Xkcbpu8yfZ+xct27d5rp2HHLWNxnPZezOmRsnJyePrGtGLWc9lmlFnQcAWLaahu2Bbi7N2xv9fn+qmxu1cm43zpmvduNxyBnv5dzvM06u9wAAlq2mYTuryl2VcX83N2p1w5b4mW68lLm5uZPqXHnEOT8/f0KdX0rOeCHjlXI3r94DAFiWyl20NDA76vzMzMzNyb9c50epaRR/zFnv1Hv7UpquieaRZmnUcg2nViVLGjR3EdOs3Zv1lnofAGBZKo8h0/CcWKVXpKH5NntzJZibmzum2h+ZnHFJGqhnm+btojaf3OpuXS3796T+g4wz672lpO616enpU5r1ZTn3xboGAGBZSvPyQ51LM3N+aaDaOM3RBd39UZidnT29G5fzcs4dZV0axKyP7e7XUr82Y2eWK+u9pTQNYXfsqmvGaVA9cgYAOGDdxqyxKrmfStPWJsodsG5BV2q37mPcWtcX+XnXZXzazaX2q/KnPTJfONjPZ9my/377GDTrOyf2843PnPVQFa/O675u41zrYuLny53GrI8bNJ/dy3x1Mz+c12zMvK3Z31aurfN7WZX1k5lXlEY047TEm1JzY/P68rv4LLkbmnoAgAM32PtO2uaMD5Nb28mdURqUNh6FND0vdc9NfHGapWGzfiTj2j3VexsOh5Pto81W8/6WbNry/s/N/i9VrjRsv7VxzvskP7OX3I5y/qC565j559Sek9xNWT+V+a7M96X27KyvyN6beT+HJvduqU+jNkj+0cS7M87L/pfJLWRrZeJf2/MAAEYuzcbHde7fSFNzaTNfk6bm+olOs1X+DlvdYI3T4M/PzR3UzeU9XdnsbW3iTd395B/vrN/OeLr7LdVc1+XN3hdNfHfW29t9AICRS7Oxpd/vH1bnxyHN0S057/U0ORvqvXEod+DadblrVub27881zVzJP9HWNPmPOuvt2b+trMtdunL3rvz3hhJn/WBpSFPzVrmujNvb1wEAjFQajtk6N07/9XlTU1P98mizjcv5JZ6fn58uca/XO35P9d/j0qStWbPmiCb860sQ7XWsX7/+kMEBfpsVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP4P/gCSxLYINC1AVgAAAABJRU5ErkJggg==>
+
+[image8]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAbCAYAAACeA7ShAAABdUlEQVR4Xu2Uu0sDQRCHLz5QKxury91t7gFaCgciKPgotRILa0VBUtpZCLZWIqKVIGJhp/+AjY2PVhstRLCwUBDBThD91mxkb5KIZ2s++LF785udm0yycZz/R6lUGlRKnaJr9Ije0BO6QefoCM2R2iLPNoQDO+gDjVdjSZJ0BEGwoOOs63b+j9DhJYce2BakR/xKFywWi570anBdt8d0tS89aCX+rP04jn1p1kDitClWruNNGu9QenUhcVsfYC6pHec5UpWPqL+Q0PYaQuKtLsbcVllXtCi0y/qCDnzfd+WZuniel5iuTig2WhXPQ6yddm4URd3EZuxYBgrNm66WpSchZwRtyPg3mHums2Hp5YZCd+iVbZv0bHjprO4K9UnvC23ortCx9GzI6ydnCm2yX8yYeriqcu/0PdTF3oldsE5kEg1hGA6kadpOzj37XunnhheNoTMZ/xOq8kdQRkv8nLqknwuKbDGvtUajyEtB/fZKNWniOJ9bsl1H+dTrXwAAAABJRU5ErkJggg==>
+
+[image9]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmwAAAAyCAYAAADhjoeLAAAFZUlEQVR4Xu3dXahlZRkH8DlqZUaUJU7NOfusM3umJo5FwSkSJkTpIgjCupAoAnH6UJEu/LowLaIvIfxGvRAvJL2LwqioqBEvLJK5aZAuxAshJVBBL8LCIPT/zFnLWfO651TsM2fO1O8H76z3fd5n73ftdS7Ww1pr79mxAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+502n0+X4TRuPhcRX9+zZc24NVqKZ33RLS0sfyjKfbeNbreu6W9oYAMARKVbOT7Hwh7Tn0/6Z9mTaH9MOZPq0Nn8zpCh7PO28Np41D6X9tt+fe9K+3+ZstqzxaNqv2vhWW11dffNkMvlYG59XPttP0l5N+3uO+V+yPZj24zYPADgF5CT+12wWRuMn6kQ/StkUS0tLb8377m7jif1yPE7e3l27dp01jm22FKvv7NaL1GfbuZMh+3EoRdVX2/i8Zv0d63PnGC+2cQBgm0phdE5O4A+OYxm/OOtEP68UJF9vYykc3tWulbyzx+NZ5i3osuataU+l/audOxmyH9em/b6Nz6s9tkMs7bo2DgBsUzlx35sCaW0Ypz9N7IVuxpWweeU9/9HG4ozEn057pb9d+m+LtUFec7CeQ6v+ysrK1Rnf3ebMkjUenkwmH0z+T2cVNCfD4uLiuzd7X+oqWtcU46Uv2O5r4wDANlS3HuvknWLnwmopZPZne+Ywn/7nx/nz2qggqefaMv+Vvpg4WLHpdPr+2q8m9RiZf0/yv7tjdEt3I3v37n1L3Zqtfta8eaN92mr1nFkbm0fe74F81vc14YX6zFWY16COcTMPAGwnQ4HUxgcphu5sY/OYtVbdEh2Pu/WrbfVM3ZFbqOl/eTw/S3Kea2PHk9xv9kXh663NOZFyTC/Pmt9r4yXxJ9pY6da/jDGztblj3Yzn83JMP5H4L0bjN9ymBgC2kW69OPpbGy8pLC5L+0AbL3nNp7v1wmdma/MH3YziKGtcPB4n56XELq2rYCkmbt/oWbXkXtX1t0GzfWS4PXo8ed+fja84Zfypdp+y5iWJ3ZTtal2B68On93Nnp30t8wfy2vMnk8lHM/5kxrfUz5FUq9dk7gt9/u3T6fQdmf9OP96f/ovHK4S7TXyerv5+7WerdRN7fhinf33t4zgHANhm6oSe9rs2nhP7RxL/XLZXtHPzWG5u+aXg2dX1tz/Lzp0735bxXdXP2lemf7gKp6OvOFbm79nR3wqt57WS+3iTcozkP9KMLxoXNd36FxF+lPbzrP/tofBa6X+rLfFrKj/rfCaxG/r859KeWV6/cvXY4uLiUvoPZP7MtDvS//Xu3bt3jtb409AfS+7KeF/mlfd6aHi/Knrz9hd361fl3jvk9Mf/8NFXAQCnlJzIL2pj86r3rGfIhnGKiI/XNkXNWua+UcXO0ewj+T8cj0+07MfDQ39tbe1NVYxVP9tDQzz924Z+GYq5vn9pirMLhnFyX963b9/bu9FvylXO0B+rAmurr3ZlvW9t9TEGADZRTuT3p13TxueVguWyNnYcp6WgOC/5N7QTJ0o+77217a/WrWb85/5nT15J+2LNJX7JkF9XBOvbncM4xdq+PudLtc1rHuu39YPE9SzeQl1Jy/z+4TWDWmO5/yLAVqn9qmPcxgGAU8d/9K3L/1aKhLtSs1zexmcZ30rcKvXN2Sa0UFfJmtjgmP8Nor5AkX3+8Ch0Rv1TV+uGQBVsr88ejdWzgifkf5bYSD0neDKOMQBwCkjRdmMb+3+2vLz8gzYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMCWeA0wNA+Iaz7fogAAAABJRU5ErkJggg==>
+
+[image10]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAZCAYAAABZ5IzrAAACKklEQVR4Xu2VT0hUURjFRxfWwhYGA9n8eW9wZGI2JS3SViFSLmqn/ZGgVZAQtGnTIkhwJSS4ceFKoSARTc1F+AdaBtq+TRmiK0UoyMCN/U7znnxd57ppRgjmwOHde77vfffce9+9L5GoArLZbBO8bbVisdgQhuGNIAge87xkY1UFAw7CafjV6hgch5fR2+AnTD2z8aqCwa5ZQ8lkspH+Pnp3FH9E/zvN+sOXfEin02d54Y6rx9DS53K568z2CXlX3LjgGhKUj9astrYN7tj4X0ilUmmK3CNpGG7Dt26OoL0ntgqfwz74AS6jn3byjhiyIPYRDrn6ISjQrkGYRQ/Pn+UMaVD0LZ79sVYoFM6g7aI9cHJlaN1qMcLSdk25k/DCZwiz99EP2K6LVkdbgTNWiwx9s5pAjZvEBmjW0e5y42XhM4Q2KkMUDK1O4Vn0HwnzgcoQ+oZJ0/sd8KVikeExG/fCZ4gi85Ghc44+KV13j/pB6YN9DfeIvdDg0dZuKi8m+e9tHS+OMbRYzlA0+AGns9XqFYPPENqCx9CrqhvSd+HqGJnQwJlM5rzVyX0TbcGfLas4ZIjB58rouqNkqMXR38F9mnVWrxgiQ/Ouzgr0yhC8anX6a3DJahVDPp8/RfFfcCXhzFi/DPTP8GmskZ+kv6cL1eb+MyjaGZSuc5nRKohfNHP9GOM8Vu4C2jrPuzrOOnlwxNY6cehOYUVuwYecrJQbr6GGGmr43/EbnoKgcJCu2EgAAAAASUVORK5CYII=>
