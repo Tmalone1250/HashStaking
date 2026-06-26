@@ -29,6 +29,8 @@ const REGISTRY_ABI = [
   "function getVerificationTier(address) view returns (uint256)"
 ];
 
+const HSK_TESTNET_RPC = "https://testnet.hsk.xyz";
+
 export default function DashboardPage() {
   const router = useRouter();
   const { isConnected, account, isVerified, provider, disconnectWallet } = useWallet();
@@ -52,11 +54,11 @@ export default function DashboardPage() {
     ]);
   }, []);
 
-  // Fetch Live On-Chain Data from HashKey Chain Testnet
+  // Fetch Live On-Chain Data reliably via direct JsonRpcProvider
   const fetchOnChainData = useCallback(async () => {
     if (!account) return;
     try {
-      const rpc = new ethers.JsonRpcProvider("https://testnet.hsk.xyz");
+      const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
       const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, rpc);
       const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, rpc);
       const regContract = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, rpc);
@@ -77,13 +79,13 @@ export default function DashboardPage() {
       setStakedBalance(fmtStaked);
       setPendingReward(fmtYield);
       setWalletUSDT(fmtBal);
-      setClearanceTier(sbtValid ? `TIER ${tier.toString()} VERIFIED` : "UNVERIFIED");
+      setClearanceTier(sbtValid || isVerified ? `TIER ${tier > 0n ? tier.toString() : "1"} VERIFIED` : "UNVERIFIED");
       setIsLoading(false);
     } catch (err) {
       console.error("Live RPC sync error:", err);
       setIsLoading(false);
     }
-  }, [account]);
+  }, [account, isVerified]);
 
   // Authentication Gate Redirect Enforcement
   useEffect(() => {
@@ -127,29 +129,78 @@ export default function DashboardPage() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
+  // Helper to ensure wallet is on HashKey Chain Testnet (Chain ID 133 / 0x85)
+  const ensureHashKeyNetwork = async () => {
+    if (!window.ethereum) return false;
+    try {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (chainId !== "0x85" && chainId !== 133 && chainId !== "133") {
+        addLog("Network_Agent", "INFO", "Prompting wallet switch to HashKey Chain Testnet (Chain ID 133)...");
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x85" }],
+          });
+        } catch (switchError) {
+          if (switchError.code === 4902 || switchError.message?.includes("4902") || switchError.message?.includes("Unrecognized")) {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: "0x85",
+                  chainName: "HashKey Chain Testnet",
+                  nativeCurrency: { name: "HashKey Eco Points", symbol: "HSK", decimals: 18 },
+                  rpcUrls: [HSK_TESTNET_RPC],
+                  blockExplorerUrls: [HSK_TESTNET_RPC],
+                },
+              ],
+            });
+          } else {
+            throw switchError;
+          }
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error("Network switch rejected or failed:", err);
+      alert("Please switch your Web3 Wallet network to HashKey Chain Testnet (Chain ID 133) to interact with contracts.");
+      return false;
+    }
+  };
+
   // Real Transaction Handlers
   const handleDeposit = async () => {
     if (!provider || !account) return;
     setTxPending(true);
     addLog("Orchestrator_Agent", "INFO", `Initiating regulatory identity pre-check for ${formatAddress(account)}...`);
     try {
-      const signer = await provider.getSigner();
-      const regContract = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, signer);
-      const valid = await regContract.hasValidSBT(account);
+      // Use direct JsonRpcProvider for reliable chain 133 verification regardless of wallet state
+      const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
+      const readReg = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, rpc);
+      const onChainValid = await readReg.hasValidSBT(account);
       
-      if (!valid && !isVerified) {
+      if (!onChainValid && !isVerified) {
         addLog("SBTRegistry", "WARNING", "Transaction Blocked - Missing Regulatory Identity SBT");
-        alert("Transaction Blocked: Your account lacks a valid KYC Regulatory Identity SBT on HashKey Testnet.");
+        alert("Transaction Blocked: Your account lacks a valid KYC Regulatory Identity SBT on HashKey Testnet. Please complete Onboarding.");
         setTxPending(false);
         return;
       }
 
+      // Ensure MetaMask is on Chain 133
+      const networkSwitched = await ensureHashKeyNetwork();
+      if (!networkSwitched) {
+        setTxPending(false);
+        return;
+      }
+
+      const signer = await provider.getSigner();
       const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, signer);
       const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
       const depositAmt = ethers.parseUnits("100", 6);
 
-      // Check balance & auto-faucet if needed
-      const bal = await usdtContract.balanceOf(account);
+      // Check read balance via reliable RPC
+      const readUsdt = new ethers.Contract(USDT_ADDR, USDT_ABI, rpc);
+      const bal = await readUsdt.balanceOf(account);
       if (bal < depositAmt) {
         addLog("mockUSDT", "INFO", "Requesting testnet faucet mint (+1,000 USDT)...");
         const mintTx = await usdtContract.mint(account, ethers.parseUnits("1000", 6));
@@ -188,9 +239,9 @@ export default function DashboardPage() {
     setTxPending(true);
     addLog("Mandate_Execution_Agent", "INFO", "Authorizing EIP-712 compliant payout mandate...");
     try {
-      const signer = await provider.getSigner();
-      const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
-      const uInfo = await vaultContract.userInfo(account);
+      const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
+      const readVault = new ethers.Contract(VAULT_ADDR, VAULT_ABI, rpc);
+      const uInfo = await readVault.userInfo(account);
       const staked = uInfo[0] ?? uInfo.stakedAmount ?? 0n;
 
       if (staked === 0n) {
@@ -199,6 +250,15 @@ export default function DashboardPage() {
         setTxPending(false);
         return;
       }
+
+      const networkSwitched = await ensureHashKeyNetwork();
+      if (!networkSwitched) {
+        setTxPending(false);
+        return;
+      }
+
+      const signer = await provider.getSigner();
+      const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
 
       addLog("CompliantYieldVault", "INFO", "Broadcasting withdrawal harvest transaction...");
       const tx = await vaultContract.withdraw(staked);
