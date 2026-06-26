@@ -54,61 +54,62 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900">
       {/* Top Navigation */}
-      <header className="border-b border-white/10 bg-[#111827]/60 backdrop-blur-md px-8 py-4 flex items-center justify-between">
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 py-4 flex items-center justify-between shadow-sm sticky top-0 z-50">
         <div className="flex items-center space-x-3 cursor-pointer" onClick={() => router.push("/")}>
-          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center font-bold text-slate-950 shadow-lg shadow-emerald-500/20">
+          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white shadow-md shadow-emerald-600/20">
             H
           </div>
-          <span className="text-xl font-bold tracking-tight text-white">HashStaking Console</span>
-          <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono border border-emerald-500/30">
+          <span className="text-xl font-bold tracking-tight text-slate-900">HashStaking Console</span>
+          <span className="text-xs px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-mono font-semibold border border-emerald-200">
             Clearance Tier: VERIFIED
           </span>
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="bg-[#111827] px-4 py-2 rounded-lg border border-white/10 flex items-center space-x-3">
+          <div className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 shadow-2xs flex items-center space-x-3">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-mono text-emerald-400">{formatAddress(account)}</span>
+            <span className="text-xs font-mono text-emerald-700 font-bold">{formatAddress(account)}</span>
           </div>
           <button
             onClick={handleDisconnect}
-            className="px-4 py-2 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold transition-all shadow-sm hover:shadow-rose-500/10 active:scale-95"
+            className="px-4 py-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-all shadow-2xs active:scale-95"
           >
             Disconnect
           </button>
         </div>
       </header>
 
-      {/* Main Executive Calm Layout */}
+      {/* Main Enterprise Light Layout */}
       <main className="flex-1 p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
-        {/* Left Column: Yield Reserve & Control Cap */}
+        {/* Left Column: Staked Reserve & Control Cap */}
         <div className="lg:col-span-2 flex flex-col space-y-8">
           {/* Executive Metrics Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-[#111827] p-6 rounded-2xl border border-white/10 relative overflow-hidden shadow-xl">
-              <div className="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Active Custody Stake</div>
-              <div className="text-4xl font-extrabold text-white font-mono tracking-tight">{stakedBalance} <span className="text-lg text-slate-500">USDT</span></div>
-              <div className="mt-4 flex items-center text-xs text-emerald-400 font-medium">
-                <span>↑ Fully Segregated Institutional Reserve</span>
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 relative overflow-hidden shadow-md shadow-slate-200/50">
+              <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Active Custody Stake</div>
+              <div className="text-4xl font-extrabold text-slate-900 font-mono tracking-tight">{stakedBalance} <span className="text-lg text-slate-500 font-sans font-semibold">USDT</span></div>
+              <div className="mt-4 flex items-center text-xs text-emerald-700 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>
+                <span>Fully Segregated Institutional Reserve</span>
               </div>
             </div>
 
-            <div className="bg-[#111827] p-6 rounded-2xl border border-white/10 relative overflow-hidden shadow-xl">
-              <div className="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Net Accrued Yield</div>
-              <div className="text-4xl font-extrabold text-emerald-400 font-mono tracking-tight">+{pendingReward} <span className="text-lg text-slate-500">USDT</span></div>
-              <div className="mt-4 flex items-center text-xs text-slate-400">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 relative overflow-hidden shadow-md shadow-slate-200/50">
+              <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Net Accrued Yield</div>
+              <div className="text-4xl font-extrabold text-emerald-600 font-mono tracking-tight">+{pendingReward} <span className="text-lg text-slate-500 font-sans font-semibold">USDT</span></div>
+              <div className="mt-4 flex items-center text-xs text-slate-500 font-medium">
                 <span>Automated Real-Time Settlement</span>
               </div>
             </div>
           </div>
 
-          {/* Three-Button Control Cap */}
-          <div className="bg-[#111827] p-8 rounded-2xl border border-white/10 shadow-xl flex flex-col justify-between flex-1">
+          {/* Treasury Control Cap */}
+          <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 flex flex-col justify-between flex-1">
             <div>
-              <h2 className="text-xl font-bold text-white mb-2">Institutional Treasury Operations</h2>
-              <p className="text-sm text-slate-400 mb-8">
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Institutional Treasury Operations</h2>
+              <p className="text-sm text-slate-600 mb-8 leading-relaxed">
                 Execute instant corporate deposits, monitor automated yield distributions, and authorize regulatory-compliant payouts.
               </p>
             </div>
@@ -116,57 +117,57 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={handleDeposit}
-                className="py-4 px-6 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-sm hover:shadow-emerald-500/10 active:scale-95"
+                className="py-4 px-6 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-900 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs active:scale-95"
               >
                 <span>[ Deposit ]</span>
-                <span className="text-[10px] font-normal text-emerald-500 group-hover:text-emerald-400">Verified Identity Gate</span>
+                <span className="text-[10px] font-semibold text-emerald-600 group-hover:text-emerald-700">Verified Identity Gate</span>
               </button>
 
               <button
                 onClick={handleAccrueYield}
-                className="py-4 px-6 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-sm hover:shadow-cyan-500/10 active:scale-95"
+                className="py-4 px-6 rounded-xl bg-sky-50 hover:bg-sky-100/80 border border-sky-200 text-sky-900 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs active:scale-95"
               >
                 <span>[ Accrue Yield ]</span>
-                <span className="text-[10px] font-normal text-cyan-500 group-hover:text-cyan-400">Automated Distribution</span>
+                <span className="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">Automated Distribution</span>
               </button>
 
               <button
                 onClick={handleTriggerPayout}
-                className="py-4 px-6 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-sm hover:shadow-purple-500/10 active:scale-95"
+                className="py-4 px-6 rounded-xl bg-purple-50 hover:bg-purple-100/80 border border-purple-200 text-purple-900 font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs active:scale-95"
               >
                 <span>[ Trigger Payout ]</span>
-                <span className="text-[10px] font-normal text-purple-500 group-hover:text-purple-400">Compliant Settlement</span>
+                <span className="text-[10px] font-semibold text-purple-600 group-hover:text-purple-700">Compliant Settlement</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Right Column: SSE Reassurance Console Overlay */}
-        <div className="bg-[#111827] rounded-2xl border border-white/10 shadow-xl flex flex-col h-full overflow-hidden">
-          <div className="p-5 border-b border-white/10 bg-[#0B0F19]/40 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-sm font-bold tracking-tight text-white font-mono">Live Activity & Audit Stream</span>
+        {/* Right Column: Live Activity & Audit Stream */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 flex flex-col h-full overflow-hidden">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-sm font-bold tracking-tight text-slate-900 font-mono">Live Activity & Audit Stream</span>
             </div>
-            <span className="text-[10px] font-mono text-slate-500">/api/v1/telemetry/stream</span>
+            <span className="text-[10px] font-mono text-slate-400">/api/v1/telemetry/stream</span>
           </div>
 
-          <div className="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-3 max-h-[500px]">
+          <div className="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-3 max-h-[500px] bg-slate-50/30">
             {telemetryLogs.map((log) => (
-              <div key={log.id} className="p-3 rounded-lg bg-[#0B0F19]/60 border border-white/5 space-y-1">
-                <div className="flex items-center justify-between text-[10px] text-slate-500">
-                  <span className="text-cyan-400 font-semibold">[{log.agent}]</span>
+              <div key={log.id} className="p-3.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span className="text-sky-700 font-bold">[{log.agent}]</span>
                   <span>{log.timestamp}</span>
                 </div>
-                <div className={log.level === "WARNING" ? "text-rose-400 font-semibold" : "text-slate-300"}>
+                <div className={log.level === "WARNING" ? "text-rose-600 font-bold" : "text-slate-700 leading-relaxed"}>
                   {log.message}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="p-3 bg-[#0B0F19]/80 border-t border-white/5 text-[11px] text-slate-500 text-center font-mono">
-            ● Live Stream Connected (Keepalive Active)
+          <div className="p-3 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-500 text-center font-mono font-medium">
+            ● Enterprise Audit Stream Connected
           </div>
         </div>
       </main>

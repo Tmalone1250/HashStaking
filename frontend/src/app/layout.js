@@ -13,17 +13,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "HashStaking Console • Institutional Sovereign Yield",
-  description: "Permissioned O(1) reward debt accounting and AP2 EIP-712 Mandates on HashKey Chain.",
+  title: "HashStaking Console • Institutional Staking Platform",
+  description: "Enterprise custody yield settlement and regulatory identity verification on HashKey Chain.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased bg-[#0B0F19]`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased bg-[#F8FAFC]`}
     >
-      <body className="min-h-full flex flex-col bg-[#0B0F19] text-slate-100">
+      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
         <WalletProvider>{children}</WalletProvider>
       </body>
     </html>
