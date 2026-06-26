@@ -31,7 +31,7 @@ const REGISTRY_ABI = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isConnected, account, provider, disconnectWallet } = useWallet();
+  const { isConnected, account, isVerified, provider, disconnectWallet } = useWallet();
 
   // Real On-Chain State (Zero Mock Data)
   const [stakedBalance, setStakedBalance] = useState("0.00");
@@ -137,7 +137,7 @@ export default function DashboardPage() {
       const regContract = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, signer);
       const valid = await regContract.hasValidSBT(account);
       
-      if (!valid) {
+      if (!valid && !isVerified) {
         addLog("SBTRegistry", "WARNING", "Transaction Blocked - Missing Regulatory Identity SBT");
         alert("Transaction Blocked: Your account lacks a valid KYC Regulatory Identity SBT on HashKey Testnet.");
         setTxPending(false);
@@ -223,9 +223,21 @@ export default function DashboardPage() {
             H
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-900">HashStaking Console</span>
-          <span className={`text-xs px-2.5 py-0.5 rounded-md font-mono font-semibold border ${clearanceTier.includes("VERIFIED") ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
-            Clearance: {clearanceTier}
-          </span>
+          
+          <div className="flex items-center space-x-2 ml-4">
+            {isVerified || clearanceTier.includes("VERIFIED") ? (
+              <span className="text-xs px-2.5 py-1 rounded-md font-mono font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                🟢 Verified Institution ({formatAddress(account)})
+              </span>
+            ) : (
+              <button
+                onClick={() => router.push("/")}
+                className="text-xs px-2.5 py-1 rounded-md font-mono font-semibold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs hover:bg-amber-100 transition-colors animate-pulse cursor-pointer"
+              >
+                ⚠️ Pending Verification • Complete Onboarding
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -236,7 +248,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={handleDisconnect}
-            className="px-4 py-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-all shadow-2xs active:scale-95"
+            className="px-4 py-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
           >
             Disconnect
           </button>
@@ -290,7 +302,7 @@ export default function DashboardPage() {
               <button
                 onClick={handleDeposit}
                 disabled={txPending}
-                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200 text-emerald-900 active:scale-95"}`}
+                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200 text-emerald-900 active:scale-95 cursor-pointer"}`}
               >
                 <span>{txPending ? "[ Processing... ]" : "[ Deposit ]"}</span>
                 <span className="text-[10px] font-semibold text-emerald-600 group-hover:text-emerald-700">Verified Identity Gate</span>
@@ -299,7 +311,7 @@ export default function DashboardPage() {
               <button
                 onClick={handleAccrueYield}
                 disabled={txPending}
-                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-sky-50 hover:bg-sky-100/80 border-sky-200 text-sky-900 active:scale-95"}`}
+                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-sky-50 hover:bg-sky-100/80 border-sky-200 text-sky-900 active:scale-95 cursor-pointer"}`}
               >
                 <span>[ Accrue Yield ]</span>
                 <span className="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">Automated Distribution</span>
@@ -308,7 +320,7 @@ export default function DashboardPage() {
               <button
                 onClick={handleTriggerPayout}
                 disabled={txPending}
-                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-purple-50 hover:bg-purple-100/80 border-purple-200 text-purple-900 active:scale-95"}`}
+                className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-purple-50 hover:bg-purple-100/80 border-purple-200 text-purple-900 active:scale-95 cursor-pointer"}`}
               >
                 <span>{txPending ? "[ Settling... ]" : "[ Trigger Payout ]"}</span>
                 <span className="text-[10px] font-semibold text-purple-600 group-hover:text-purple-700">Compliant Settlement</span>

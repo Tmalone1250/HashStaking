@@ -1,6 +1,6 @@
 """
 HashStaking Console Backend (main.py)
-Asynchronous FastAPI server providing AP2 Mandate verification and real-time SSE Agent Telemetry streaming.
+Asynchronous FastAPI server providing AP2 Mandate verification, KYC onboarding, and real-time SSE Agent Telemetry streaming.
 """
 import asyncio
 import time
@@ -33,6 +33,11 @@ w3 = Web3(Web3.HTTPProvider(HASHKEY_TESTNET_RPC))
 # Telemetry queue
 telemetry_queue: asyncio.Queue = asyncio.Queue()
 
+# In-memory demo registry tracking verified institutions
+verified_registry: Dict[str, bool] = {
+    "0x85f52c53478cd87f571ce18a4a6e43aebb5da9d3": True
+}
+
 class MandateVerificationRequest(BaseModel):
     user: str = Field(..., description="Staker Ethereum address")
     vault: str = Field(..., description="CompliantYieldVault address")
@@ -40,6 +45,12 @@ class MandateVerificationRequest(BaseModel):
     nonce: int = Field(..., description="Unique replay protection nonce")
     expiration: int = Field(..., description="Unix timestamp expiration")
     signature: str = Field(..., description="Hex encoded EIP-712 signature")
+
+class KYCVerificationRequest(BaseModel):
+    address: str = Field(..., description="Staker Ethereum address")
+    full_name: str = Field(..., description="Full Legal Name")
+    corporate_entity: str = Field(..., description="Corporate Entity Name")
+    jurisdiction: str = Field(..., description="Operating Jurisdiction")
 
 @app.on_event("startup")
 async def startup_event():
@@ -58,6 +69,22 @@ async def health_check():
         "chain_id": HASHKEY_TESTNET_CHAIN_ID,
         "rpc_connected": w3.is_connected()
     }
+
+@app.get("/api/v1/registry/check-status")
+async def check_registry_status(address: str):
+    addr_clean = address.lower()
+    return {"isVerified": verified_registry.get(addr_clean, False)}
+
+@app.post("/api/v1/registry/verify")
+async def verify_registry_user(payload: KYCVerificationRequest):
+    addr_clean = payload.address.lower()
+    verified_registry[addr_clean] = True
+    await telemetry_queue.put({
+        "agent": "KYC_Onboarding_Agent",
+        "level": "INFO",
+        "message": f"Institutional compliance verified for {payload.corporate_entity} ({payload.jurisdiction}) - SBT Identity Issued."
+    })
+    return {"success": True, "isVerified": True, "entity": payload.corporate_entity, "address": payload.address}
 
 @app.post("/api/v1/mandate/verify")
 async def verify_mandate(payload: MandateVerificationRequest):
