@@ -1,0 +1,12 @@
+{
+  "network": "HashKey Chain Testnet",
+  "chainId": 133,
+  "rpcUrl": "https://testnet.hsk.xyz",
+  "deployer": "0x85F52C53478CD87f571cE18a4a6e43AeBB5DA9D3",
+  "timestamp": "2026-06-26T21:58:00Z",
+  "contracts": {
+    "mockUSDT": "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB",
+    "SBTRegistry": "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7",
+    "CompliantYieldVault": "0x7E2130deE7c8716b6188255c4800486eD708862E"
+  }
+}
