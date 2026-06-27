@@ -46,8 +46,8 @@ export default function LandingPage() {
       } else {
         alert("Verification request rejected by compliance gate.");
       }
-    } catch (err) {
-      console.warn("Backend offline, triggering demo onboarding fallback:", err);
+    } catch {
+      // Backend offline, seamlessly trigger demo onboarding fallback
       setIsVerified(true);
       setShowModal(false);
       router.push("/dashboard");

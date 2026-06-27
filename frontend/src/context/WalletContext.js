@@ -21,8 +21,8 @@ export function WalletProvider({ children }) {
         setIsVerified(data.isVerified);
         return data.isVerified;
       }
-    } catch (err) {
-      console.warn("Backend registry status check error:", err);
+    } catch {
+      // Local FastAPI backend offline (silent fallback)
     }
     return false;
   }, [account]);
