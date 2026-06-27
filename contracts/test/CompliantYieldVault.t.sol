@@ -185,4 +185,33 @@ contract CompliantYieldVaultTest is Test {
         assertEq(stakedAmount, 0);
         assertEq(rewardDebt, 0);
     }
+
+    function test_ZeroPoolDivisionProtectionAndSkimDust() public {
+        assertEq(vault.totalStaked(), 0);
+
+        // Admin calls injectYieldRewards while totalStaked == 0 (returns early without division panic)
+        vm.prank(admin);
+        vault.injectYieldRewards(100 * 1e6);
+
+        // Simulate direct dust transfer sent to vault address
+        vm.prank(admin);
+        token.transfer(address(vault), 100 * 1e6);
+        assertEq(token.balanceOf(address(vault)), 100 * 1e6);
+
+        // Admin skims dust while totalStaked == 0
+        uint256 preAdminBal = token.balanceOf(admin);
+        vm.prank(admin);
+        vault.skimDust(address(token), 100 * 1e6);
+        assertEq(token.balanceOf(admin), preAdminBal + 100 * 1e6);
+
+        // Wallet A deposits principal
+        vm.prank(walletA);
+        vault.deposit(500 * 1e6);
+        assertGt(vault.totalStaked(), 0);
+
+        // Admin attempts to skim underlying capital while users are active (must revert)
+        vm.prank(admin);
+        vm.expectRevert("Cannot skim underlying capital while users are active");
+        vault.skimDust(address(token), 10 * 1e6);
+    }
 }

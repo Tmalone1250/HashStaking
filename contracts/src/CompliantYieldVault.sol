@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./mockUSDT.sol";
@@ -49,6 +50,7 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     event AssetValuationUpdated(uint256 newValuation, uint256 timestamp);
     event AssetWindDownToggled(bool status, uint256 timestamp);
     event EmergencyWithdrawExecuted(address indexed user, uint256 amount, uint256 timestamp);
+    event DustSkimmed(address indexed token, uint256 amount);
 
     modifier onlyVerified(address account) {
         require(sbtRegistry.hasValidSBT(account), "Transaction Blocked - Missing Regulatory Identity SBT");
@@ -78,11 +80,13 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
      */
     function injectYieldRewards(uint256 amount) external onlyRole(ADMIN_ROLE) {
         require(amount > 0, "Yield: Amount must be greater than zero");
-        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
-        if (totalStaked > 0) {
-            accRewardPerShare += (amount * PRECISION_FACTOR) / totalStaked;
-            emit RewardsInjected(amount);
+        if (totalStaked == 0) {
+            // If rent is deposited but nobody is staking, skip the distribution factor entirely to prevent a division-by-zero crash.
+            return;
         }
+        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
+        accRewardPerShare += (amount * PRECISION_FACTOR) / totalStaked;
+        emit RewardsInjected(amount);
     }
 
     /**
@@ -185,5 +189,14 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
         stakingToken.safeTransfer(msg.sender, amountToReturn);
 
         emit EmergencyWithdrawExecuted(msg.sender, amountToReturn, block.timestamp);
+    }
+
+    /**
+     * @notice Cleanup sweep function restricted to ADMIN_ROLE to handle trailing administrative token balances or dust.
+     */
+    function skimDust(address _token, uint256 _amount) external onlyRole(ADMIN_ROLE) {
+        require(_token != address(stakingToken) || totalStaked == 0, "Cannot skim underlying capital while users are active");
+        IERC20(_token).transfer(msg.sender, _amount);
+        emit DustSkimmed(_token, _amount);
     }
 }
