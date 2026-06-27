@@ -22,6 +22,10 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     uint256 public totalStaked;
     uint256 public accRewardPerShare;
 
+    uint256 public lastOracleUpdateTimestamp;
+    uint256 public assetValuationUSD;
+    uint256 public constant ORACLE_TIMEOUT_WINDOW = 25 hours;
+
     uint256 public constant PRECISION_FACTOR = 1e12;
     uint256 public constant FEE_BPS = 300; // 3% admin performance fee
     uint256 public constant BPS_MAX = 10000;
@@ -40,9 +44,15 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     event Withdrawn(address indexed user, uint256 amount);
     event RewardsHarvested(address indexed user, uint256 rewardAmount, uint256 feePaid);
     event RewardsInjected(uint256 amount);
+    event AssetValuationUpdated(uint256 newValuation, uint256 timestamp);
 
     modifier onlyVerified(address account) {
         require(sbtRegistry.hasValidSBT(account), "Transaction Blocked - Missing Regulatory Identity SBT");
+        _;
+    }
+
+    modifier priceIsFresh() {
+        require(block.timestamp - lastOracleUpdateTimestamp <= ORACLE_TIMEOUT_WINDOW, "Oracle Circuit Breaker: Price feed is stale, operations halted");
         _;
     }
 
@@ -51,6 +61,9 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
         stakingToken = mockUSDT(_token);
         sbtRegistry = SBTRegistry(_registry);
         feeTreasury = _feeTreasury;
+
+        lastOracleUpdateTimestamp = block.timestamp;
+        assetValuationUSD = 100000;
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
@@ -69,9 +82,18 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     }
 
     /**
+     * @notice Updates the off-chain oracle asset valuation USD baseline and resets the circuit breaker timer.
+     */
+    function updateAssetValuation(uint256 newValuation) external onlyRole(ADMIN_ROLE) {
+        assetValuationUSD = newValuation;
+        lastOracleUpdateTimestamp = block.timestamp;
+        emit AssetValuationUpdated(newValuation, block.timestamp);
+    }
+
+    /**
      * @notice Derives pending yield in O(1) complexity.
      */
-    function pendingYield(address _user) external view returns (uint256) {
+    function pendingYield(address _user) external view priceIsFresh returns (uint256) {
         UserInfo storage user = userInfo[_user];
         return ((user.stakedAmount * accRewardPerShare) / PRECISION_FACTOR) - user.rewardDebt;
     }
@@ -79,7 +101,7 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     /**
      * @notice Compliant deposit endpoint.
      */
-    function deposit(uint256 amount) external nonReentrant onlyVerified(msg.sender) {
+    function deposit(uint256 amount) external nonReentrant onlyVerified(msg.sender) priceIsFresh {
         require(amount > 0, "Vault: Deposit amount must be greater than zero");
         UserInfo storage user = userInfo[msg.sender];
 
@@ -97,7 +119,7 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     /**
      * @notice Compliant withdrawal endpoint.
      */
-    function withdraw(uint256 amount) external nonReentrant onlyVerified(msg.sender) {
+    function withdraw(uint256 amount) external nonReentrant onlyVerified(msg.sender) priceIsFresh {
         UserInfo storage user = userInfo[msg.sender];
         require(user.stakedAmount >= amount, "Vault: Insufficient staked balance");
 

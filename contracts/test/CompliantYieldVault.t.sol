@@ -117,4 +117,32 @@ contract CompliantYieldVaultTest is Test {
 
         emit log_named_uint("Withdraw & Claim Gas Consumption", gasUsedWithdraw);
     }
+
+    function test_OracleCircuitBreaker() public {
+        uint256 depositAmount = 500 * 1e6;
+
+        // Advance EVM timestamp past 25-hour timeout window
+        vm.warp(block.timestamp + 25 hours + 1 seconds);
+
+        // Verify deposit is halted
+        vm.prank(walletA);
+        vm.expectRevert("Oracle Circuit Breaker: Price feed is stale, operations halted");
+        vault.deposit(depositAmount);
+
+        // Verify pendingYield query is halted
+        vm.expectRevert("Oracle Circuit Breaker: Price feed is stale, operations halted");
+        vault.pendingYield(walletA);
+
+        // Admin updates oracle valuation baseline
+        vm.prank(admin);
+        vault.updateAssetValuation(125000);
+
+        assertEq(vault.assetValuationUSD(), 125000);
+        assertEq(vault.lastOracleUpdateTimestamp(), block.timestamp);
+
+        // Verify deposit now executes cleanly
+        vm.prank(walletA);
+        vault.deposit(depositAmount);
+        assertEq(vault.totalStaked(), depositAmount);
+    }
 }
