@@ -11,7 +11,13 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 from web3 import Web3
 
-from ap2_engine import verify_mandate_signature, HASHKEY_TESTNET_RPC, HASHKEY_TESTNET_CHAIN_ID
+from ap2_engine import (
+    verify_mandate_signature,
+    verify_legacy_mandate_signature,
+    AgentPaymentMandateRequest,
+    HASHKEY_TESTNET_RPC,
+    HASHKEY_TESTNET_CHAIN_ID
+)
 
 app = FastAPI(
     title="HashStaking Console API",
@@ -197,7 +203,7 @@ async def verify_mandate(payload: MandateVerificationRequest):
     }
     
     sig_str = str(payload.signature)
-    is_valid = verify_mandate_signature(mandate_data, sig_str, verifying_contract=payload.vault)
+    is_valid = verify_legacy_mandate_signature(mandate_data, sig_str, verifying_contract=payload.vault)
     if not is_valid:
         await telemetry_queue.put({
             "agent": "Compliance_Gate",
@@ -213,6 +219,12 @@ async def verify_mandate(payload: MandateVerificationRequest):
     })
     
     return {"verified": True, "user": payload.user, "vault": payload.vault}
+
+@app.post("/api/v1/mandates/verify")
+async def verify_ap2_mandate(request: AgentPaymentMandateRequest):
+    if not verify_mandate_signature(request):
+        raise HTTPException(status_code=401, detail="Invalid EIP-712 Mandate Signature")
+    return {"status": "success", "agentId": request.message.agentId, "userAddress": request.message.userAddress}
 
 @app.get("/api/v1/telemetry/stream")
 async def telemetry_stream(request: Request):
