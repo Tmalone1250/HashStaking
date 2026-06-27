@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import { useWallet } from "../../context/WalletContext";
+import DepositModal from "../../components/DepositModal";
 
 // Live HashKey Testnet Production Addresses (Chain ID 133)
 const VAULT_ADDR = "0x7E2130deE7c8716b6188255c4800486eD708862E";
@@ -43,6 +44,7 @@ export default function DashboardPage() {
   const [clearanceTier, setClearanceTier] = useState("UNVERIFIED");
   const [isLoading, setIsLoading] = useState(true);
   const [txPending, setTxPending] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
   const [telemetryLogs, setTelemetryLogs] = useState([
     { id: 1, timestamp: new Date().toLocaleTimeString(), agent: "System", level: "INFO", message: "Connecting to HashKey Testnet RPC (Chain ID 133)..." }
@@ -169,61 +171,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Real Transaction Handlers
-  const handleDeposit = async () => {
-    if (!provider || !account) return;
-    setTxPending(true);
-    addLog("Orchestrator_Agent", "INFO", `Initiating regulatory identity pre-check for ${formatAddress(account)}...`);
-    try {
-      const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
-      const readReg = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, rpc);
-      const onChainValid = await readReg.hasValidSBT(account);
-      
-      if (!onChainValid && !isVerified) {
-        addLog("SBTRegistry", "WARNING", "Transaction Blocked - Missing Regulatory Identity SBT");
-        alert("Transaction Blocked: Your account lacks a valid KYC Regulatory Identity SBT on HashKey Testnet. Please complete Onboarding.");
-        setTxPending(false);
-        return;
-      }
-
-      const networkSwitched = await ensureHashKeyNetwork();
-      if (!networkSwitched) {
-        setTxPending(false);
-        return;
-      }
-
-      const signer = await provider.getSigner();
-      const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, signer);
-      const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
-      const depositAmt = ethers.parseUnits("100", 6);
-
-      const readUsdt = new ethers.Contract(USDT_ADDR, USDT_ABI, rpc);
-      const bal = await readUsdt.balanceOf(account);
-      if (bal < depositAmt) {
-        addLog("mockUSDT", "INFO", "Requesting testnet faucet mint (+1,000 USDT)...");
-        const mintTx = await usdtContract.mint(account, ethers.parseUnits("1000", 6));
-        await mintTx.wait();
-        addLog("mockUSDT", "INFO", "Testnet USDT minted successfully.");
-      }
-
-      addLog("mockUSDT", "INFO", "Requesting token allowance approval...");
-      const approveTx = await usdtContract.approve(VAULT_ADDR, depositAmt);
-      await approveTx.wait();
-
-      addLog("CompliantYieldVault", "INFO", "Broadcasting deposit transaction to HashKey Chain...");
-      const depTx = await vaultContract.deposit(depositAmt);
-      await depTx.wait();
-
-      addLog("CompliantYieldVault", "INFO", `Successfully deposited 100.00 USDT into institutional reserve.`);
-      await fetchOnChainData();
-    } catch (err) {
-      console.error(err);
-      addLog("Orchestrator_Agent", "WARNING", `Execution cancelled or reverted: ${err.shortMessage || err.message}`);
-    } finally {
-      setTxPending(false);
-    }
-  };
-
   const handleInjectYield = async () => {
     if (!provider || !account) return;
     const rawAmt = prompt("Enter USDT yield amount in smallest units (default 5000000 for 5 USDT):", "5000000");
@@ -246,7 +193,6 @@ export default function DashboardPage() {
       const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, signer);
       const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
 
-      // Check balance & auto-mint testnet tokens if needed
       const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
       const readUsdt = new ethers.Contract(USDT_ADDR, USDT_ABI, rpc);
       const bal = await readUsdt.balanceOf(account);
@@ -401,12 +347,12 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
-                onClick={handleDeposit}
+                onClick={() => setIsDepositModalOpen(true)}
                 disabled={txPending}
                 className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200 text-emerald-900 active:scale-95 cursor-pointer"}`}
               >
                 <span>{txPending ? "[ Processing... ]" : "[ Deposit ]"}</span>
-                <span className="text-[10px] font-semibold text-emerald-600 group-hover:text-emerald-700">Verified Identity Gate</span>
+                <span className="text-[10px] font-semibold text-emerald-600 group-hover:text-emerald-700">Flexible Capital Allocation</span>
               </button>
 
               <button
@@ -459,6 +405,17 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      <DepositModal
+        isOpen={isDepositModalOpen}
+        onClose={() => setIsDepositModalOpen(false)}
+        account={account}
+        provider={provider}
+        isVerified={isVerified}
+        onSuccess={fetchOnChainData}
+        addLog={addLog}
+        ensureHashKeyNetwork={ensureHashKeyNetwork}
+      />
     </div>
   );
 }
