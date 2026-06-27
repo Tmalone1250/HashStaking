@@ -38,20 +38,36 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
   };
 
   const handleFaucetMint = async () => {
-    if (!provider || !account) return;
+    if (!account) return;
     setFauceting(true);
-    addLog("mockUSDT", "INFO", "Requesting testnet faucet mint (+1,000 USDT)...");
+    addLog("Faucet_Dispenser_Agent", "INFO", "Requesting backend faucet claim (+1,000 USDT)...");
     try {
-      const switched = await ensureHashKeyNetwork();
-      if (!switched) return;
-      const signer = await provider.getSigner();
-      const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, signer);
-      const tx = await usdtContract.mint(account, ethers.parseUnits("1000", 6));
-      await tx.wait();
-      addLog("mockUSDT", "INFO", "Testnet USDT minted successfully into reserve.");
+      const res = await fetch("http://localhost:8000/api/v1/faucet/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet_address: account })
+      });
+      if (!res.ok) {
+        throw new Error("Backend faucet dispenser rejected request");
+      }
+      addLog("mockUSDT", "INFO", "Testnet USDT minted successfully via backend dispenser.");
       await handleSetMax();
     } catch (err) {
-      addLog("mockUSDT", "WARNING", `Faucet failed: ${err.shortMessage || err.message}`);
+      console.warn("Backend faucet failed, attempting fallback direct browser mint:", err);
+      try {
+        const switched = await ensureHashKeyNetwork();
+        if (switched && provider) {
+          const signer = await provider.getSigner();
+          const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, signer);
+          const tx = await usdtContract.mint(account, ethers.parseUnits("1000", 6));
+          await tx.wait();
+          addLog("mockUSDT", "INFO", "Direct contract mint confirmed.");
+          await handleSetMax();
+        }
+      } catch (fallbackErr) {
+        addLog("mockUSDT", "WARNING", `Faucet failed: ${fallbackErr.shortMessage || fallbackErr.message}`);
+        alert("Faucet failed: " + (fallbackErr.shortMessage || fallbackErr.message));
+      }
     } finally {
       setFauceting(false);
     }

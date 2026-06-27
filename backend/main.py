@@ -21,7 +21,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,6 +51,9 @@ class KYCVerificationRequest(BaseModel):
     full_name: str = Field(..., description="Full Legal Name")
     corporate_entity: str = Field(..., description="Corporate Entity Name")
     jurisdiction: str = Field(..., description="Operating Jurisdiction")
+
+class ClaimRequest(BaseModel):
+    wallet_address: str = Field(..., description="Target wallet address to receive faucet tokens")
 
 @app.on_event("startup")
 async def startup_event():
@@ -85,6 +88,55 @@ async def verify_registry_user(payload: KYCVerificationRequest):
         "message": f"Institutional compliance verified for {payload.corporate_entity} ({payload.jurisdiction}) - SBT Identity Issued."
     })
     return {"success": True, "isVerified": True, "entity": payload.corporate_entity, "address": payload.address}
+
+USDT_CONTRACT_ADDR = "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB"
+USDT_MINT_ABI = [{
+    "constant": False,
+    "inputs": [{"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}],
+    "name": "mint",
+    "outputs": [],
+    "payable": False,
+    "stateMutability": "nonpayable",
+    "type": "function"
+}]
+
+@app.post("/api/v1/faucet/claim")
+async def claim_mock_usdt(request: ClaimRequest):
+    target_wallet = request.wallet_address
+    try:
+        pk = "0xff3c8594e09146bc50fd0f47760b5ceb170a5a39475595428f7d938a9a7d9cba"
+        account = w3.eth.account.from_key(pk)
+        
+        contract = w3.eth.contract(address=Web3.to_checksum_address(USDT_CONTRACT_ADDR), abi=USDT_MINT_ABI)
+        target_addr = Web3.to_checksum_address(target_wallet)
+        amount = 1000 * 10**6
+        
+        nonce = w3.eth.get_transaction_count(account.address, "pending")
+        tx = contract.functions.mint(target_addr, amount).build_transaction({
+            'from': account.address,
+            'nonce': nonce,
+            'gas': 150000,
+            'gasPrice': w3.eth.gas_price,
+            'chainId': 133
+        })
+        
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=pk)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        
+        await telemetry_queue.put({
+            "agent": "Faucet_Dispenser_Agent",
+            "level": "INFO",
+            "message": f"Dispatched +1,000 testnet USDT faucet allotment to {target_wallet} (Tx: {w3.to_hex(tx_hash)})"
+        })
+        
+        return {"status": "success", "message": f"Minted 1000 mockUSDT to {target_wallet}", "tx_hash": w3.to_hex(tx_hash)}
+    except Exception as e:
+        await telemetry_queue.put({
+            "agent": "Faucet_Dispenser_Agent",
+            "level": "WARNING",
+            "message": f"Faucet claim failed for {target_wallet}: {str(e)}"
+        })
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/mandate/verify")
 async def verify_mandate(payload: MandateVerificationRequest):
