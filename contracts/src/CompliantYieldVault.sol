@@ -26,6 +26,8 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     uint256 public assetValuationUSD;
     uint256 public constant ORACLE_TIMEOUT_WINDOW = 25 hours;
 
+    bool public isAssetWindDownActive;
+
     uint256 public constant PRECISION_FACTOR = 1e12;
     uint256 public constant FEE_BPS = 300; // 3% admin performance fee
     uint256 public constant BPS_MAX = 10000;
@@ -45,6 +47,8 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     event RewardsHarvested(address indexed user, uint256 rewardAmount, uint256 feePaid);
     event RewardsInjected(uint256 amount);
     event AssetValuationUpdated(uint256 newValuation, uint256 timestamp);
+    event AssetWindDownToggled(bool status, uint256 timestamp);
+    event EmergencyWithdrawExecuted(address indexed user, uint256 amount, uint256 timestamp);
 
     modifier onlyVerified(address account) {
         require(sbtRegistry.hasValidSBT(account), "Transaction Blocked - Missing Regulatory Identity SBT");
@@ -152,5 +156,34 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
                 emit RewardsHarvested(_user, netPayout, fee);
             }
         }
+    }
+
+    /**
+     * @notice Administrative trigger to activate emergency wind-down mode during liquidation or zero-yield events.
+     */
+    function toggleAssetWindDown(bool _status) external onlyRole(ADMIN_ROLE) {
+        isAssetWindDownActive = _status;
+        emit AssetWindDownToggled(_status, block.timestamp);
+    }
+
+    /**
+     * @notice Fail-safe extraction pathway bypassing standard reward calculations and price feed freshness during liquidation.
+     */
+    function emergencyWithdraw() external nonReentrant onlyVerified(msg.sender) {
+        require(isAssetWindDownActive, "Emergency Wind-Down mode is not active");
+
+        UserInfo storage user = userInfo[msg.sender];
+        uint256 amountToReturn = user.stakedAmount;
+        require(amountToReturn > 0, "No staked capital found inside this vault");
+
+        // Zero out state variable allocations immediately to eliminate reentrancy threats
+        user.stakedAmount = 0;
+        user.rewardDebt = 0;
+        totalStaked -= amountToReturn;
+
+        // Bypass normal reward-debt mathematics and directly transfer underlying principal balance
+        stakingToken.safeTransfer(msg.sender, amountToReturn);
+
+        emit EmergencyWithdrawExecuted(msg.sender, amountToReturn, block.timestamp);
     }
 }

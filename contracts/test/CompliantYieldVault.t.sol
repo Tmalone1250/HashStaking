@@ -145,4 +145,44 @@ contract CompliantYieldVaultTest is Test {
         vault.deposit(depositAmount);
         assertEq(vault.totalStaked(), depositAmount);
     }
+
+    function test_EmergencyWindDownWithdraw() public {
+        uint256 depositAmount = 1000 * 1e6;
+
+        // Wallet A deposits principal
+        vm.prank(walletA);
+        vault.deposit(depositAmount);
+
+        // Advance EVM timestamp past 25-hour timeout window so oracle becomes stale
+        vm.warp(block.timestamp + 30 hours);
+
+        // Verify standard withdraw reverts due to stale oracle
+        vm.prank(walletA);
+        vm.expectRevert("Oracle Circuit Breaker: Price feed is stale, operations halted");
+        vault.withdraw(500 * 1e6);
+
+        // Verify emergencyWithdraw reverts while emergency mode is disabled
+        vm.prank(walletA);
+        vm.expectRevert("Emergency Wind-Down mode is not active");
+        vault.emergencyWithdraw();
+
+        // Admin activates emergency wind-down mode
+        vm.prank(admin);
+        vault.toggleAssetWindDown(true);
+        assertTrue(vault.isAssetWindDownActive());
+
+        uint256 preBalanceA = token.balanceOf(walletA);
+
+        // Wallet A executes emergency withdrawal bypassing oracle freshness and reward iterations
+        vm.prank(walletA);
+        vault.emergencyWithdraw();
+
+        // Verify exact principal extracted and global state updated
+        assertEq(token.balanceOf(walletA), preBalanceA + depositAmount);
+        assertEq(vault.totalStaked(), 0);
+
+        (uint256 stakedAmount, uint256 rewardDebt, ) = vault.userInfo(walletA);
+        assertEq(stakedAmount, 0);
+        assertEq(rewardDebt, 0);
+    }
 }
