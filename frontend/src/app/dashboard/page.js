@@ -35,7 +35,7 @@ const HSK_TESTNET_RPC = "https://testnet.hsk.xyz";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isConnected, account, isVerified, provider, disconnectWallet } = useWallet();
+  const { isConnected, account, isVerified, checkingIdentity, provider, disconnectWallet } = useWallet();
 
   // Real On-Chain State (Zero Mock Data)
   const [stakedBalance, setStakedBalance] = useState("0.00");
@@ -272,7 +272,11 @@ export default function DashboardPage() {
           <span className="text-xl font-bold tracking-tight text-slate-900">HashStaking Console</span>
           
           <div className="flex items-center space-x-2 ml-4">
-            {isVerified || clearanceTier.includes("VERIFIED") ? (
+            {checkingIdentity ? (
+              <span className="text-xs px-2.5 py-1 rounded-md font-mono font-semibold bg-slate-100 text-slate-500 border border-slate-200 animate-pulse">
+                ⏳ Syncing SBT On-Chain...
+              </span>
+            ) : isVerified || clearanceTier.includes("VERIFIED") ? (
               <span className="text-xs px-2.5 py-1 rounded-md font-mono font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
                 🟢 Verified Institution ({formatAddress(account)})
               </span>

@@ -3,29 +3,54 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 
+const REGISTRY_ADDR = "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7";
+const REGISTRY_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function hasValidSBT(address user) view returns (bool)"
+];
+const HSK_TESTNET_RPC = "https://testnet.hsk.xyz";
+
 const WalletContext = createContext(null);
 
 export function WalletProvider({ children }) {
   const [account, setAccount] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [checkingIdentity, setCheckingIdentity] = useState(false);
   const [provider, setProvider] = useState(null);
 
-  const checkVerificationStatus = useCallback(async (userAddr) => {
+  const verifyIdentityState = useCallback(async (userAddr) => {
     const target = userAddr || account;
     if (!target) return false;
+    setCheckingIdentity(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/registry/check-status?address=${target}`);
-      if (res.ok) {
-        const data = await res.json();
-        setIsVerified(data.isVerified);
-        return data.isVerified;
-      }
-    } catch {
-      // Local FastAPI backend offline (silent fallback)
+      const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
+      const regContract = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, rpc);
+      const [bal, valid] = await Promise.all([
+        regContract.balanceOf(target),
+        regContract.hasValidSBT(target)
+      ]);
+      const holdsSBT = bal > 0n || valid;
+      setIsVerified(holdsSBT);
+      return holdsSBT;
+    } catch (err) {
+      console.warn("On-chain SBT query lag, checking secondary fallback:", err);
+      try {
+        const res = await fetch(`http://localhost:8000/api/v1/registry/check-status?address=${target}`);
+        if (res.ok) {
+          const data = await res.json();
+          setIsVerified(data.isVerified);
+          return data.isVerified;
+        }
+      } catch {}
+      setIsVerified(false);
+      return false;
+    } finally {
+      setCheckingIdentity(false);
     }
-    return false;
   }, [account]);
+
+  const checkVerificationStatus = verifyIdentityState;
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.ethereum) {
@@ -36,15 +61,16 @@ export function WalletProvider({ children }) {
         if (accounts.length > 0) {
           setAccount(accounts[0]);
           setIsConnected(true);
-          await checkVerificationStatus(accounts[0]);
+          await verifyIdentityState(accounts[0]);
         } else {
           setAccount(null);
           setIsConnected(false);
           setIsVerified(false);
+          setCheckingIdentity(false);
         }
       });
     }
-  }, [checkVerificationStatus]);
+  }, [verifyIdentityState]);
 
   const connectWallet = async () => {
     if (typeof window === "undefined" || !window.ethereum) {
@@ -56,7 +82,7 @@ export function WalletProvider({ children }) {
       if (accounts.length > 0) {
         setAccount(accounts[0]);
         setIsConnected(true);
-        await checkVerificationStatus(accounts[0]);
+        await verifyIdentityState(accounts[0]);
       }
     } catch (err) {
       console.error("Connection failed:", err);
@@ -67,6 +93,7 @@ export function WalletProvider({ children }) {
     setAccount(null);
     setIsConnected(false);
     setIsVerified(false);
+    setCheckingIdentity(false);
   };
 
   return (
@@ -75,7 +102,9 @@ export function WalletProvider({ children }) {
         account,
         isConnected,
         isVerified,
+        checkingIdentity,
         setIsVerified,
+        verifyIdentityState,
         checkVerificationStatus,
         connectWallet,
         disconnectWallet,

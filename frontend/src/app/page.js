@@ -6,7 +6,7 @@ import { useWallet } from "../context/WalletContext";
 
 export default function LandingPage() {
   const router = useRouter();
-  const { isConnected, account, isVerified, setIsVerified, connectWallet, disconnectWallet } = useWallet();
+  const { isConnected, account, isVerified, checkingIdentity, setIsVerified, connectWallet, disconnectWallet } = useWallet();
 
   const [showModal, setShowModal] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -92,14 +92,16 @@ export default function LandingPage() {
                 <span>{formatAddress(account)}</span>
               </span>
 
-              {!isVerified && (
+              {checkingIdentity ? (
+                <span className="text-[10px] font-mono text-slate-400 font-semibold animate-pulse">Syncing Chain...</span>
+              ) : !isVerified ? (
                 <button
                   onClick={() => setShowModal(true)}
                   className="text-xs bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded font-bold shadow-sm transition-colors animate-pulse cursor-pointer"
                 >
                   Verify Identity
                 </button>
-              )}
+              ) : null}
 
               <button
                 onClick={() => router.push("/dashboard")}
@@ -137,7 +139,12 @@ export default function LandingPage() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 w-full max-w-md">
-          {isConnected && !isVerified ? (
+          {isConnected && checkingIdentity ? (
+            <div className="w-full sm:w-auto px-8 py-4 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 font-mono font-bold text-sm shadow-sm flex items-center justify-center space-x-2 animate-pulse">
+              <div className="w-4 h-4 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
+              <span>Querying SBT Registry...</span>
+            </div>
+          ) : isConnected && !isVerified ? (
             <button
               onClick={() => setShowModal(true)}
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-base shadow-xl shadow-amber-500/20 transition-all cursor-pointer"

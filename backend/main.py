@@ -78,16 +78,54 @@ async def check_registry_status(address: str):
     addr_clean = address.lower()
     return {"isVerified": verified_registry.get(addr_clean, False)}
 
+SBT_REGISTRY_ADDR = "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7"
+SBT_ISSUE_ABI = [{
+    "constant": False,
+    "inputs": [{"name": "user", "type": "address"}, {"name": "tier", "type": "uint256"}, {"name": "expiry", "type": "uint256"}],
+    "name": "issueSBT",
+    "outputs": [],
+    "payable": False,
+    "stateMutability": "nonpayable",
+    "type": "function"
+}]
+
 @app.post("/api/v1/registry/verify")
 async def verify_registry_user(payload: KYCVerificationRequest):
     addr_clean = payload.address.lower()
     verified_registry[addr_clean] = True
-    await telemetry_queue.put({
-        "agent": "KYC_Onboarding_Agent",
-        "level": "INFO",
-        "message": f"Institutional compliance verified for {payload.corporate_entity} ({payload.jurisdiction}) - SBT Identity Issued."
-    })
-    return {"success": True, "isVerified": True, "entity": payload.corporate_entity, "address": payload.address}
+    tx_hash_hex = "0x"
+    try:
+        pk = "0xff3c8594e09146bc50fd0f47760b5ceb170a5a39475595428f7d938a9a7d9cba"
+        account = w3.eth.account.from_key(pk)
+        reg_contract = w3.eth.contract(address=Web3.to_checksum_address(SBT_REGISTRY_ADDR), abi=SBT_ISSUE_ABI)
+        target_addr = Web3.to_checksum_address(payload.address)
+        expiry = int(time.time()) + 31536000
+        
+        nonce = w3.eth.get_transaction_count(account.address, "pending")
+        tx = reg_contract.functions.issueSBT(target_addr, 1, expiry).build_transaction({
+            'from': account.address,
+            'nonce': nonce,
+            'gas': 200000,
+            'gasPrice': w3.eth.gas_price,
+            'chainId': 133
+        })
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=pk)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        tx_hash_hex = w3.to_hex(tx_hash)
+        
+        await telemetry_queue.put({
+            "agent": "KYC_Onboarding_Agent",
+            "level": "INFO",
+            "message": f"Institutional compliance verified for {payload.corporate_entity} ({payload.jurisdiction}) - On-Chain SBT Identity Minted (Tx: {tx_hash_hex})."
+        })
+    except Exception as e:
+        await telemetry_queue.put({
+            "agent": "KYC_Onboarding_Agent",
+            "level": "WARNING",
+            "message": f"On-chain SBT minting fallback: {str(e)}"
+        })
+
+    return {"success": True, "isVerified": True, "entity": payload.corporate_entity, "address": payload.address, "tx_hash": tx_hash_hex}
 
 USDT_CONTRACT_ADDR = "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB"
 USDT_MINT_ABI = [{
