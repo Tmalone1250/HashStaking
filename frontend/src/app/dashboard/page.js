@@ -7,7 +7,7 @@ import { useWallet } from "../../context/WalletContext";
 import DepositModal from "../../components/DepositModal";
 
 // Live HashKey Testnet Production Addresses (Chain ID 133)
-const VAULT_ADDR = "0x7E2130deE7c8716b6188255c4800486eD708862E";
+const VAULT_ADDR = "0x71EF9Eb25B5e3C53f9467755b2D66F5ebF455d25";
 const USDT_ADDR = "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB";
 const REGISTRY_ADDR = "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7";
 
