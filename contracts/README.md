@@ -1,13 +1,13 @@
 # HashStaking Console - Smart Contracts (`Foundry`)
 
-Institutional-grade, regulatory-compliant staking architecture deployed on **HashKey Chain Testnet** (Chain ID: `133`). Built with Foundry and OpenZeppelin standards.
+Institutional-grade, regulatory-compliant staking architecture deployed on **HashKey Chain Mainnet** (Chain ID: `177`). Built with Foundry and OpenZeppelin standards.
 
-## 📜 Deployed Live Contract Addresses (`https://testnet.hsk.xyz`)
+## 📜 Deployed Live Contract Addresses (`https://mainnet.hsk.xyz`)
 | Contract | Address | Explorer Link |
 | :--- | :--- | :--- |
-| **`CompliantYieldVault`** | `0x71EF9Eb25B5e3C53f9467755b2D66F5ebF455d25` | [View on HashKey Explorer](https://testnet.hsk.xyz/address/0x71EF9Eb25B5e3C53f9467755b2D66F5ebF455d25) |
-| **`SBTRegistry`** | `0x7AE9a2BdDa9b827483be932a6BE1372867B460c7` | [View on HashKey Explorer](https://testnet.hsk.xyz/address/0x7AE9a2BdDa9b827483be932a6BE1372867B460c7) |
-| **`mockUSDT`** | `0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB` | [View on HashKey Explorer](https://testnet.hsk.xyz/address/0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB) |
+| **`mockUSDT`** | `0x7AE9a2BdDa9b827483be932a6BE1372867B460c7` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0x7AE9a2BdDa9b827483be932a6BE1372867B460c7) |
+| **`SBTRegistry`** | `0x7E2130deE7c8716b6188255c4800486eD708862E` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0x7E2130deE7c8716b6188255c4800486eD708862E) |
+| **`CompliantYieldVault`** | `0xaeeb9155C287f469C53bcA564954F485a6D7eeA7` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0xaeeb9155C287f469C53bcA564954F485a6D7eeA7) |
 
 ## 🏗️ Core Smart Contract Architecture
 * **`CompliantYieldVault.sol`**: The primary yield management engine. Features:

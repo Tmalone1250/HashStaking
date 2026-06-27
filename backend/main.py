@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 from web3 import Web3
+import os
 
 from ap2_engine import (
     verify_mandate_signature,
@@ -84,7 +85,7 @@ async def check_registry_status(address: str):
     addr_clean = address.lower()
     return {"isVerified": verified_registry.get(addr_clean, False)}
 
-SBT_REGISTRY_ADDR = "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7"
+SBT_REGISTRY_ADDR = os.getenv("SBT_REGISTRY_ADDRESS", "0x7E2130deE7c8716b6188255c4800486eD708862E")
 SBT_ISSUE_ABI = [{
     "constant": False,
     "inputs": [{"name": "user", "type": "address"}, {"name": "tier", "type": "uint256"}, {"name": "expiry", "type": "uint256"}],
@@ -113,7 +114,7 @@ async def verify_registry_user(payload: KYCVerificationRequest):
             'nonce': nonce,
             'gas': 200000,
             'gasPrice': w3.eth.gas_price,
-            'chainId': 133
+            'chainId': HASHKEY_TESTNET_CHAIN_ID
         })
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=pk)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
@@ -133,7 +134,7 @@ async def verify_registry_user(payload: KYCVerificationRequest):
 
     return {"success": True, "isVerified": True, "entity": payload.corporate_entity, "address": payload.address, "tx_hash": tx_hash_hex}
 
-USDT_CONTRACT_ADDR = "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB"
+USDT_CONTRACT_ADDR = os.getenv("MOCK_USDT_ADDRESS", "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7")
 USDT_MINT_ABI = [{
     "constant": False,
     "inputs": [{"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}],
@@ -161,7 +162,7 @@ async def claim_mock_usdt(request: ClaimRequest):
             'nonce': nonce,
             'gas': 150000,
             'gasPrice': w3.eth.gas_price,
-            'chainId': 133
+            'chainId': HASHKEY_TESTNET_CHAIN_ID
         })
         
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=pk)

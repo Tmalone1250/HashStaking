@@ -1,6 +1,6 @@
 # HashStaking Console - Sovereign AI Agent & RWA Compliance Platform
 
-[![HashKey Chain Testnet](https://img.shields.io/badge/HashKey_Chain-Testnet_133-0052FF?style=for-the-badge)](https://testnet.hsk.xyz)
+[![HashKey Chain Mainnet](https://img.shields.io/badge/HashKey_Chain-Mainnet_177-0052FF?style=for-the-badge)](https://mainnet.hsk.xyz)
 [![Google AP2](https://img.shields.io/badge/Protocol-Google_AP2_Mandates-4285F4?style=for-the-badge)](https://github.com/google/agent-payments-protocol)
 [![OpenZeppelin](https://img.shields.io/badge/Security-OpenZeppelin_Pausable-4E5EE4?style=for-the-badge)](https://openzeppelin.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js_16-000000?style=for-the-badge)](https://nextjs.org)
@@ -17,7 +17,7 @@ The **HashStaking Console** is an institutional-grade yield management and compl
 |                                    INSTITUTIONAL INVESTOR / AGENT                                |
 +--------------------------------------------------------------------------------------------------+
                                                   |
-                     1. Connect Wallet & Auto-Switch to HashKey Testnet (133)
+                     1. Connect Wallet & Auto-Switch to HashKey Mainnet (177)
                                                   v
 +--------------------------------------------------------------------------------------------------+
 |                                  FRONTEND CONSOLE (Next.js 16)                                   |
@@ -36,7 +36,7 @@ The **HashStaking Console** is an institutional-grade yield management and compl
          | 3. Issue Compliance Identity SBT                                               | 5. Verified Execution
          v                                                                                v
 +--------------------------------------------------------------------------------------------------+
-|                              HASHKEY CHAIN TESTNET SMART CONTRACTS                               |
+|                              HASHKEY CHAIN MAINNET SMART CONTRACTS                               |
 |  - SBTRegistry.sol: Single source of truth for institutional identity                            |
 |  - CompliantYieldVault.sol: Pausable yield engine with 25-hr oracle circuit breaker              |
 |  - mockUSDT.sol: 6-decimal ERC-20 pegged liquidity token                                         |
@@ -45,15 +45,15 @@ The **HashStaking Console** is an institutional-grade yield management and compl
 
 ---
 
-## 🌐 Live HashKey Testnet Deployment (Chain ID: `133`)
+## 🌐 Live HashKey Mainnet Deployment (Chain ID: `177`)
 
-All contracts are compiled, tested via Foundry, and deployed live on the **HashKey Chain Testnet** (`https://testnet.hsk.xyz`).
+All contracts are compiled, tested via Foundry, and deployed live on the **HashKey Chain Mainnet** (`https://mainnet.hsk.xyz`).
 
 | Component | Contract Address | HashKey Explorer |
 | :--- | :--- | :--- |
-| **`CompliantYieldVault`** | `0x71EF9Eb25B5e3C53f9467755b2D66F5ebF455d25` | [View Explorer](https://testnet.hsk.xyz/address/0x71EF9Eb25B5e3C53f9467755b2D66F5ebF455d25) |
-| **`SBTRegistry`** | `0x7AE9a2BdDa9b827483be932a6BE1372867B460c7` | [View Explorer](https://testnet.hsk.xyz/address/0x7AE9a2BdDa9b827483be932a6BE1372867B460c7) |
-| **`mockUSDT`** | `0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB` | [View Explorer](https://testnet.hsk.xyz/address/0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB) |
+| **`mockUSDT`** | `0x7AE9a2BdDa9b827483be932a6BE1372867B460c7` | [View Explorer](https://explorer.hsk.xyz/address/0x7AE9a2BdDa9b827483be932a6BE1372867B460c7) |
+| **`SBTRegistry`** | `0x7E2130deE7c8716b6188255c4800486eD708862E` | [View Explorer](https://explorer.hsk.xyz/address/0x7E2130deE7c8716b6188255c4800486eD708862E) |
+| **`CompliantYieldVault`** | `0xaeeb9155C287f469C53bcA564954F485a6D7eeA7` | [View Explorer](https://explorer.hsk.xyz/address/0xaeeb9155C287f469C53bcA564954F485a6D7eeA7) |
 
 ---
 
@@ -72,12 +72,12 @@ Asynchronous **FastAPI** Python service implementing the **Google Agent Payments
 * **EIP-712 Pydantic Validation (`ap2_engine.py`)**: Strict schema validation (`AgentPaymentMandateRequest`, `EIP712Domain`, `PaymentMandateMessage`) enforcing EVM regex patterns, future expiration timestamps, and anti-replay nonces.
 * **Cryptographic Verification Engine**: Uses `eth-account` to encode structured typed messages and perform elliptic curve public key recovery (`Account.recover_message`), ensuring strict case-insensitive address verification.
 * **Consolidated Flat Architecture**: Designed for lean operational overhead, exposing verified endpoints (`POST /api/v1/mandates/verify`), compliance registry checks (`GET /api/v1/registry/check-status`), and institutional onboarding minting (`POST /api/v1/registry/verify`).
-* **Automated Testnet Faucet Dispenser**: Secure backend route (`POST /api/v1/faucet/claim`) dispatching +1,000 `mockUSDT` directly to onboarded investor wallets.
+* **Automated Mock Faucet Dispenser**: Secure backend route (`POST /api/v1/faucet/claim`) dispatching +1,000 `mockUSDT` directly to onboarded investor wallets.
 * **Real-Time SSE Telemetry Stream**: Server-Sent Events endpoint (`GET /api/v1/telemetry/stream`) pushing live execution logs, verification status, and transaction hashes directly to the frontend console.
 
 ### 3. Institutional Corporate UI (`/frontend`)
 Built with **Next.js 16** and styled with the **"Executive Calm"** corporate aesthetic (`#F8FAFC` light background, subtle slate borders, high-contrast typography, and institutional terminology):
-* **Network Auto-Switching Engine (`WalletContext.js`)**: Automatically intercepts Web3 connections and prompts MetaMask to switch or add HashKey Chain Testnet (`Chain ID: 133`).
+* **Network Auto-Switching Engine (`WalletContext.js`)**: Automatically intercepts Web3 connections and prompts MetaMask to switch or add HashKey Chain Mainnet (`Chain ID: 177`).
 * **Stateless On-Chain Identity Persistence**: Bypasses browser localStorage cache. Upon wallet connection, the frontend queries `SBTRegistry.isVerified()` and backend telemetry. Verified institutions instantly bypass KYC screens and drop straight into the management console.
 * **Institutional Onboarding Funnel (`/onboarding`)**: 4-step interactive workflow collecting corporate entity details, jurisdiction, and legal representatives, dispatching backend verification and on-chain SBT minting.
 * **Flexible Capital Allocation Gate (`DepositModal.js`)**: Dynamic modal featuring custom numeric input, automated balance querying, maximum allowance calculation, and seamless 6-decimal token approval.
@@ -124,7 +124,7 @@ HashStaking/
 ├── contracts/              # Foundry smart contract workspace
 │   ├── src/                # Solidity contracts (CompliantYieldVault, SBTRegistry, mockUSDT)
 │   ├── test/               # Comprehensive unit and integration testing suites
-│   ├── script/             # Deployment and testnet interaction scripts
+│   ├── script/             # Deployment and mainnet interaction scripts
 │   └── README.md           # Contract specific documentation
 ├── backend/                # Python FastAPI backend service
 │   ├── main.py             # Server entry point, API routes & SSE streaming

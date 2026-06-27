@@ -1,12 +1,12 @@
 {
-  "network": "HashKey Chain Testnet",
-  "chainId": 133,
-  "rpcUrl": "https://testnet.hsk.xyz",
+  "network": "HashKey Chain Mainnet",
+  "chainId": 177,
+  "rpcUrl": "https://mainnet.hsk.xyz",
   "deployer": "0x85F52C53478CD87f571cE18a4a6e43AeBB5DA9D3",
-  "timestamp": "2026-06-26T21:58:00Z",
+  "timestamp": "2026-06-27T17:10:00Z",
   "contracts": {
-    "mockUSDT": "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB",
-    "SBTRegistry": "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7",
-    "CompliantYieldVault": "0x71EF9Eb25B5e3C53f9467755b2D66F5ebF455d25"
+    "mockUSDT": "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7",
+    "SBTRegistry": "0x7E2130deE7c8716b6188255c4800486eD708862E",
+    "CompliantYieldVault": "0xaeeb9155C287f469C53bcA564954F485a6D7eeA7"
   }
 }

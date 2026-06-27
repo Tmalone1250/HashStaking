@@ -7,3 +7,7 @@ evm_version = "shanghai"
 remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/"
 ]
+
+[rpc_endpoints]
+hashkey_mainnet = "https://mainnet.hsk.xyz"
+hashkey_testnet = "https://testnet.hsk.xyz"

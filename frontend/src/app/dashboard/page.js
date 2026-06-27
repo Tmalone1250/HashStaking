@@ -6,22 +6,31 @@ import { ethers } from "ethers";
 import { useWallet } from "../../context/WalletContext";
 import DepositModal from "../../components/DepositModal";
 
-// Live HashKey Testnet Production Addresses (Chain ID 133)
-const VAULT_ADDR = "0x71EF9Eb25B5e3C53f9467755b2D66F5ebF455d25";
-const USDT_ADDR = "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB";
-const REGISTRY_ADDR = "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7";
+// Live HashKey Mainnet Production Addresses (Chain ID 177)
+const VAULT_ADDR = process.env.NEXT_PUBLIC_COMPLIANT_YIELD_VAULT_ADDRESS || "0xaeeb9155C287f469C53bcA564954F485a6D7eeA7";
+const USDT_ADDR = process.env.NEXT_PUBLIC_MOCK_USDT_ADDRESS || "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7";
+const REGISTRY_ADDR = process.env.NEXT_PUBLIC_SBT_REGISTRY_ADDRESS || "0x7E2130deE7c8716b6188255c4800486eD708862E";
 
 const VAULT_ABI = [
   "function userInfo(address) view returns (uint256 stakedAmount, uint256 rewardDebt, uint256 cumulativePaidFees)",
-  "function pendingYield(address) view returns (uint256)",
   "function totalStaked() view returns (uint256)",
+  "function accumulatedTokenPerShare() view returns (uint256)",
+  "function pendingYield(address) view returns (uint256)",
   "function deposit(uint256 amount)",
   "function withdraw(uint256 amount)",
-  "function injectYieldRewards(uint256 amount)"
+  "function injectYieldRewards(uint256 amount)",
+  "function emergencyWithdraw()",
+  "function isAssetWindDownActive() view returns (bool)",
+  "function paused() view returns (bool)",
+  "function toggleAssetWindDown(bool _status)",
+  "function pauseVault()",
+  "function unpauseVault()",
+  "function skimDust(address _token, uint256 _amount)"
 ];
 
 const USDT_ABI = [
   "function balanceOf(address) view returns (uint256)",
+  "function allowance(address, address) view returns (uint256)",
   "function approve(address spender, uint256 amount)",
   "function mint(address to, uint256 amount)"
 ];
@@ -31,7 +40,7 @@ const REGISTRY_ABI = [
   "function getVerificationTier(address) view returns (uint256)"
 ];
 
-const HSK_TESTNET_RPC = "https://testnet.hsk.xyz";
+const HSK_TESTNET_RPC = process.env.NEXT_PUBLIC_HASHKEY_RPC_URL || "https://mainnet.hsk.xyz";
 
 export default function DashboardPage() {
   const router = useRouter();

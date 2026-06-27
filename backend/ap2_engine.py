@@ -15,9 +15,12 @@ except ImportError:
         return encode_typed_data(full_message=structured_data)
 from web3 import Web3
 
-# HashKey Chain Testnet Configuration
-HASHKEY_TESTNET_RPC = "https://testnet.hsk.xyz"
-HASHKEY_TESTNET_CHAIN_ID = 133
+import os
+
+# HashKey Chain Mainnet Configuration
+HASHKEY_TESTNET_RPC = os.getenv("HASHKEY_RPC_URL", "https://mainnet.hsk.xyz")
+HASHKEY_TESTNET_CHAIN_ID = int(os.getenv("HASHKEY_CHAIN_ID", 177))
+
 
 EVM_ADDRESS_REGEX = re.compile(r"^0x[a-fA-F0-9]{40}$")
 SIGNATURE_REGEX = re.compile(r"^0x[a-fA-F0-9]{130}$")

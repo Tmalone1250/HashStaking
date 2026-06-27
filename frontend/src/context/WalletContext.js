@@ -3,12 +3,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 
-const REGISTRY_ADDR = "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7";
+const REGISTRY_ADDR = process.env.NEXT_PUBLIC_SBT_REGISTRY_ADDRESS || "0x7E2130deE7c8716b6188255c4800486eD708862E";
 const REGISTRY_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
   "function hasValidSBT(address user) view returns (bool)"
 ];
-const HSK_TESTNET_RPC = "https://testnet.hsk.xyz";
+const HSK_TESTNET_RPC = process.env.NEXT_PUBLIC_HASHKEY_RPC_URL || "https://mainnet.hsk.xyz";
 
 const WalletContext = createContext(null);
 

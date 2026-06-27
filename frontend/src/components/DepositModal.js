@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import { ethers } from "ethers";
 
-const VAULT_ADDR = "0x71EF9Eb25B5e3C53f9467755b2D66F5ebF455d25";
-const USDT_ADDR = "0xC4752a9FB06Dc0432831Befca38E071B07cE7BeB";
-const REGISTRY_ADDR = "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7";
+const VAULT_ADDR = process.env.NEXT_PUBLIC_COMPLIANT_YIELD_VAULT_ADDRESS || "0xaeeb9155C287f469C53bcA564954F485a6D7eeA7";
+const USDT_ADDR = process.env.NEXT_PUBLIC_MOCK_USDT_ADDRESS || "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7";
+const REGISTRY_ADDR = process.env.NEXT_PUBLIC_SBT_REGISTRY_ADDRESS || "0x7E2130deE7c8716b6188255c4800486eD708862E";
 
 const VAULT_ABI = ["function deposit(uint256 amount)"];
 const USDT_ABI = [
@@ -14,7 +14,7 @@ const USDT_ABI = [
   "function mint(address to, uint256 amount)"
 ];
 const REGISTRY_ABI = ["function hasValidSBT(address) view returns (bool)"];
-const HSK_TESTNET_RPC = "https://testnet.hsk.xyz";
+const HSK_TESTNET_RPC = process.env.NEXT_PUBLIC_HASHKEY_RPC_URL || "https://mainnet.hsk.xyz";
 
 export default function DepositModal({ isOpen, onClose, account, provider, isVerified, onSuccess, addLog, ensureHashKeyNetwork }) {
   const [amountInput, setAmountInput] = useState("");

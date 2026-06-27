@@ -12,7 +12,7 @@ def test_health_check():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert data["chain_id"] == 133
+    assert data["chain_id"] in [133, 177]
 
 def test_expired_mandate_rejection():
     expired_time = int(time.time()) - 3600
