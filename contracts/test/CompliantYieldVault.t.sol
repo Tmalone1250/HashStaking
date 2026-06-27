@@ -214,4 +214,50 @@ contract CompliantYieldVaultTest is Test {
         vm.expectRevert("Cannot skim underlying capital while users are active");
         vault.skimDust(address(token), 10 * 1e6);
     }
+
+    function test_PausableControlAndEmergencyWithdrawExemption() public {
+        uint256 depositAmount = 1000 * 1e6;
+
+        // Wallet A deposits principal
+        vm.prank(walletA);
+        vault.deposit(depositAmount);
+
+        // Admin pauses the vault
+        vm.prank(admin);
+        vault.pauseVault();
+        assertTrue(vault.paused());
+
+        bytes memory enforcedPauseSelector = abi.encodeWithSignature("EnforcedPause()");
+
+        // Verify standard interactions throw immediate revert while paused
+        vm.prank(walletA);
+        vm.expectRevert(enforcedPauseSelector);
+        vault.deposit(500 * 1e6);
+
+        vm.prank(walletA);
+        vm.expectRevert(enforcedPauseSelector);
+        vault.withdraw(500 * 1e6);
+
+        vm.prank(admin);
+        vm.expectRevert(enforcedPauseSelector);
+        vault.injectYieldRewards(100 * 1e6);
+
+        // Admin toggles asset wind-down mode while paused
+        vm.prank(admin);
+        vault.toggleAssetWindDown(true);
+
+        uint256 preBalanceA = token.balanceOf(walletA);
+
+        // Verify emergencyWithdraw continues to process properly during global pause
+        vm.prank(walletA);
+        vault.emergencyWithdraw();
+
+        assertEq(token.balanceOf(walletA), preBalanceA + depositAmount);
+        assertEq(vault.totalStaked(), 0);
+
+        // Admin unpauses vault
+        vm.prank(admin);
+        vault.unpauseVault();
+        assertFalse(vault.paused());
+    }
 }

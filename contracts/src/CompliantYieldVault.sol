@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./mockUSDT.sol";
 import "./SBTRegistry.sol";
@@ -12,7 +13,7 @@ import "./SBTRegistry.sol";
  * @title CompliantYieldVault
  * @dev Implements gas-efficient O(1) Model B reward debt accounting with strict compliance gating, SafeERC20, and ReentrancyGuard.
  */
-contract CompliantYieldVault is AccessControl, ReentrancyGuard {
+contract CompliantYieldVault is AccessControl, ReentrancyGuard, Pausable {
     using SafeERC20 for mockUSDT;
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -78,7 +79,7 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     /**
      * @notice Injects physical PoS yield rewards into the vault and updates the global O(1) accumulator index.
      */
-    function injectYieldRewards(uint256 amount) external onlyRole(ADMIN_ROLE) {
+    function injectYieldRewards(uint256 amount) external onlyRole(ADMIN_ROLE) whenNotPaused {
         require(amount > 0, "Yield: Amount must be greater than zero");
         if (totalStaked == 0) {
             // If rent is deposited but nobody is staking, skip the distribution factor entirely to prevent a division-by-zero crash.
@@ -109,7 +110,7 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     /**
      * @notice Compliant deposit endpoint.
      */
-    function deposit(uint256 amount) external nonReentrant onlyVerified(msg.sender) priceIsFresh {
+    function deposit(uint256 amount) external nonReentrant onlyVerified(msg.sender) priceIsFresh whenNotPaused {
         require(amount > 0, "Vault: Deposit amount must be greater than zero");
         UserInfo storage user = userInfo[msg.sender];
 
@@ -127,7 +128,7 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
     /**
      * @notice Compliant withdrawal endpoint.
      */
-    function withdraw(uint256 amount) external nonReentrant onlyVerified(msg.sender) priceIsFresh {
+    function withdraw(uint256 amount) external nonReentrant onlyVerified(msg.sender) priceIsFresh whenNotPaused {
         UserInfo storage user = userInfo[msg.sender];
         require(user.stakedAmount >= amount, "Vault: Insufficient staked balance");
 
@@ -198,5 +199,13 @@ contract CompliantYieldVault is AccessControl, ReentrancyGuard {
         require(_token != address(stakingToken) || totalStaked == 0, "Cannot skim underlying capital while users are active");
         IERC20(_token).transfer(msg.sender, _amount);
         emit DustSkimmed(_token, _amount);
+    }
+
+    function pauseVault() external onlyRole(ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpauseVault() external onlyRole(ADMIN_ROLE) {
+        _unpause();
     }
 }
