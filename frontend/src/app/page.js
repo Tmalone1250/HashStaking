@@ -103,17 +103,6 @@ export default function LandingPage() {
   const mockupRef = useRef(null);
   const requestRef = useRef(0);
 
-  const handleLaunchApp = async (e) => {
-    if (e) e.preventDefault();
-    if (!isConnected) {
-      await connectWallet();
-    } else if (!isVerified) {
-      setShowModal(true);
-    } else {
-      router.push("/dashboard");
-    }
-  };
-
   const handleVerifySubmit = async (e) => {
     e.preventDefault();
     if (!account) return;
@@ -293,14 +282,14 @@ export default function LandingPage() {
                 >
                   Verify Identity
                 </button>
-              ) : null}
-
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="text-xs bg-emerald-600 text-white px-3 py-1 rounded font-bold hover:bg-emerald-700 shadow-sm transition-colors cursor-pointer"
-              >
-                Enter Console
-              </button>
+              ) : (
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className="text-xs bg-emerald-600 text-white px-3 py-1 rounded font-bold hover:bg-emerald-700 shadow-sm transition-colors cursor-pointer"
+                >
+                  Enter Dashboard
+                </button>
+              )}
               <button
                 onClick={disconnectWallet}
                 className="text-xs text-rose-600 hover:text-rose-700 font-semibold ml-2 transition-colors cursor-pointer"
@@ -343,15 +332,42 @@ export default function LandingPage() {
             Join institutional leaders securely managing RWA yields on the HashKey Mainnet with automated EIP-712 settlement gates.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <button
-              onClick={handleLaunchApp}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg shadow-xl shadow-emerald-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-center gap-3 group"
-            >
-              <div className="text-center">
-                <div className="text-[10px] font-bold tracking-wider text-emerald-200 uppercase mb-[-2px]">Connect & Verify</div>
-                <div className="text-xl font-bold leading-none tracking-tight">Launch Console →</div>
+            {!isConnected ? (
+              <button
+                onClick={connectWallet}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg shadow-xl shadow-emerald-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-center gap-3 group"
+              >
+                <div className="text-center">
+                  <div className="text-[10px] font-bold tracking-wider text-emerald-200 uppercase mb-[-2px]">Step 1</div>
+                  <div className="text-xl font-bold leading-none tracking-tight">Connect Wallet →</div>
+                </div>
+              </button>
+            ) : checkingIdentity ? (
+              <div className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-100 border border-slate-200 text-slate-500 font-mono font-bold text-base shadow-sm flex items-center justify-center space-x-3 animate-pulse">
+                <div className="w-5 h-5 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
+                <span>Querying SBT Registry...</span>
               </div>
-            </button>
+            ) : !isVerified ? (
+              <button
+                onClick={() => setShowModal(true)}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg shadow-xl shadow-amber-500/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-center gap-3 animate-pulse"
+              >
+                <div className="text-center">
+                  <div className="text-[10px] font-bold tracking-wider text-amber-100 uppercase mb-[-2px]">Step 2</div>
+                  <div className="text-xl font-bold leading-none tracking-tight">Verify Identity →</div>
+                </div>
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg shadow-xl shadow-emerald-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-center gap-3"
+              >
+                <div className="text-center">
+                  <div className="text-[10px] font-bold tracking-wider text-emerald-200 uppercase mb-[-2px]">Verified Partner</div>
+                  <div className="text-xl font-bold leading-none tracking-tight">Enter Dashboard →</div>
+                </div>
+              </button>
+            )}
             <a
               href="https://explorer.hsk.xyz"
               target="_blank"
@@ -487,12 +503,33 @@ export default function LandingPage() {
                   <span className="text-slate-900 font-semibold">HashStaking Console</span> empowers corporate treasuries with structured ERC-3643 accountability, precise yield tracking, and secure execution.
                 </p>
                 <div className="flex items-center justify-center lg:justify-start gap-4">
-                  <button
-                    onClick={handleLaunchApp}
-                    className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
-                  >
-                    Enter Platform →
-                  </button>
+                  {!isConnected ? (
+                    <button
+                      onClick={connectWallet}
+                      className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                    >
+                      Connect Wallet →
+                    </button>
+                  ) : checkingIdentity ? (
+                    <div className="px-6 py-3.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 font-mono font-bold text-xs shadow-sm flex items-center justify-center space-x-2 animate-pulse">
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
+                      <span>Syncing SBT...</span>
+                    </div>
+                  ) : !isVerified ? (
+                    <button
+                      onClick={() => setShowModal(true)}
+                      className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md shadow-amber-500/20 transition-all animate-pulse cursor-pointer"
+                    >
+                      Verify Identity →
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => router.push("/dashboard")}
+                      className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+                    >
+                      Enter Dashboard →
+                    </button>
+                  )}
                 </div>
               </div>
 
