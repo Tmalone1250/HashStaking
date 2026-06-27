@@ -1,8 +1,46 @@
-out/
-cache/
-broadcast/
+# ==============================
+# HashStaking Console .gitignore
+# ==============================
+
+# Node / Next.js (Frontend)
 node_modules/
-.env
-venv/
+.next/
+out/
+build/
+.npm
+
+# Python / FastAPI (Backend)
 __pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
 .pytest_cache/
+alembic.ini
+
+# Smart Contracts (Foundry / Hardhat)
+cache/
+out/
+artifacts/
+typechain-types/
+broadcast/
+deployments/local/
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.*
+*.pem
+private_keys.json
+wallet.json
+*.key
+
+# OS & Editor Files
+notebooklm-mcp/
+docs/
+.ai_rules
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
