@@ -15,7 +15,8 @@ const VAULT_ABI = [
   "function pendingYield(address) view returns (uint256)",
   "function totalStaked() view returns (uint256)",
   "function deposit(uint256 amount)",
-  "function withdraw(uint256 amount)"
+  "function withdraw(uint256 amount)",
+  "function injectYieldRewards(uint256 amount)"
 ];
 
 const USDT_ABI = [
@@ -174,7 +175,6 @@ export default function DashboardPage() {
     setTxPending(true);
     addLog("Orchestrator_Agent", "INFO", `Initiating regulatory identity pre-check for ${formatAddress(account)}...`);
     try {
-      // Use direct JsonRpcProvider for reliable chain 133 verification regardless of wallet state
       const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
       const readReg = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, rpc);
       const onChainValid = await readReg.hasValidSBT(account);
@@ -186,7 +186,6 @@ export default function DashboardPage() {
         return;
       }
 
-      // Ensure MetaMask is on Chain 133
       const networkSwitched = await ensureHashKeyNetwork();
       if (!networkSwitched) {
         setTxPending(false);
@@ -198,7 +197,6 @@ export default function DashboardPage() {
       const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
       const depositAmt = ethers.parseUnits("100", 6);
 
-      // Check read balance via reliable RPC
       const readUsdt = new ethers.Contract(USDT_ADDR, USDT_ABI, rpc);
       const bal = await readUsdt.balanceOf(account);
       if (bal < depositAmt) {
@@ -226,12 +224,55 @@ export default function DashboardPage() {
     }
   };
 
-  const handleAccrueYield = async () => {
+  const handleInjectYield = async () => {
+    if (!provider || !account) return;
+    const rawAmt = prompt("Enter USDT yield amount in smallest units (default 5000000 for 5 USDT):", "5000000");
+    if (!rawAmt || isNaN(Number(rawAmt))) return;
+
+    const amount = BigInt(rawAmt);
+    if (amount <= 0n) return;
+
     setTxPending(true);
-    addLog("Orchestrator_Agent", "INFO", "Polling live network RPC for O(1) accumulator updates...");
-    await fetchOnChainData();
-    addLog("CompliantYieldVault", "INFO", "On-chain state index synchronized.");
-    setTxPending(false);
+    addLog("Orchestrator_Agent", "INFO", `Authorizing institutional yield injection of ${ethers.formatUnits(amount, 6)} USDT...`);
+
+    try {
+      const networkSwitched = await ensureHashKeyNetwork();
+      if (!networkSwitched) {
+        setTxPending(false);
+        return;
+      }
+
+      const signer = await provider.getSigner();
+      const usdtContract = new ethers.Contract(USDT_ADDR, USDT_ABI, signer);
+      const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
+
+      // Check balance & auto-mint testnet tokens if needed
+      const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
+      const readUsdt = new ethers.Contract(USDT_ADDR, USDT_ABI, rpc);
+      const bal = await readUsdt.balanceOf(account);
+      if (bal < amount) {
+        addLog("mockUSDT", "INFO", "Insufficient USDT balance. Minting testnet faucet tokens (+1,000 USDT)...");
+        const mintTx = await usdtContract.mint(account, ethers.parseUnits("1000", 6));
+        await mintTx.wait();
+      }
+
+      addLog("mockUSDT", "INFO", "Authorizing custody vault transfer allowance...");
+      const approveTx = await usdtContract.approve(VAULT_ADDR, amount);
+      await approveTx.wait();
+
+      addLog("CompliantYieldVault", "INFO", "Broadcasting injectYieldRewards transaction to HashKey Chain...");
+      const tx = await vaultContract.injectYieldRewards(amount);
+      await tx.wait();
+
+      addLog("CompliantYieldVault", "INFO", `Successfully injected ${ethers.formatUnits(amount, 6)} USDT yield into institutional reserve.`);
+      await fetchOnChainData();
+    } catch (err) {
+      console.error("Injection error:", err);
+      addLog("CompliantYieldVault", "WARNING", "[Error]: Injection Failed - Unauthorized Admin Role");
+      alert("[Error]: Injection Failed - Unauthorized Admin Role");
+    } finally {
+      setTxPending(false);
+    }
   };
 
   const handleTriggerPayout = async () => {
@@ -369,12 +410,12 @@ export default function DashboardPage() {
               </button>
 
               <button
-                onClick={handleAccrueYield}
+                onClick={handleInjectYield}
                 disabled={txPending}
                 className={`py-4 px-6 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center space-y-1 group shadow-2xs ${txPending ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-sky-50 hover:bg-sky-100/80 border-sky-200 text-sky-900 active:scale-95 cursor-pointer"}`}
               >
-                <span>[ Accrue Yield ]</span>
-                <span className="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">Automated Distribution</span>
+                <span>{txPending ? "[ Injecting... ]" : "[ Accrue Yield ]"}</span>
+                <span className="text-[10px] font-semibold text-sky-600 group-hover:text-sky-700">Contract Yield Injection</span>
               </button>
 
               <button
