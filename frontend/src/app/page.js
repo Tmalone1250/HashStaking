@@ -107,6 +107,16 @@ export default function LandingPage() {
     e.preventDefault();
     if (!account) return;
     setSubmitting(true);
+    const investorObj = {
+      address: account,
+      full_name: fullName,
+      corporate_entity: corporateEntity,
+      jurisdiction: jurisdiction
+    };
+    try {
+      localStorage.setItem("verified_investor_" + account.toLowerCase(), JSON.stringify(investorObj));
+    } catch {}
+
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       const res = await fetch(`${backendUrl}/api/v1/registry/verify`, {

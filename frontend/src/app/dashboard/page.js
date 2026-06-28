@@ -54,6 +54,11 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [txPending, setTxPending] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [verifiedInvestorsList, setVerifiedInvestorsList] = useState([
+    { address: "0x50F9F043500eC3c3FB733B94F2EC27a9030e00EF", full_name: "Satoshi Nakamoto", corporate_entity: "Nakamoto Holdings LLC", jurisdiction: "El Salvador" },
+    { address: "0x8D84bcFfc08E9a9C88d64d6680549Ab1919032A0", full_name: "Dwayne Michael Carter Jr.", corporate_entity: "Young Money Entertainment", jurisdiction: "United States" },
+    { address: "0xe69324550feC48171a1Aa11Dc9b076144e777dFe", full_name: "Akira Toriyama", corporate_entity: "Bird Studio Corp.", jurisdiction: "Japan" }
+  ]);
 
   const [telemetryLogs, setTelemetryLogs] = useState([
     { id: 1, timestamp: new Date().toLocaleTimeString(), agent: "System", level: "INFO", message: "Connecting to HashKey Mainnet RPC (Chain ID 177)..." }
@@ -83,23 +88,28 @@ export default function DashboardPage() {
         regContract.getVerificationTier(account)
       ]);
 
-      const rawStaked = uInfo[0] ?? uInfo.stakedAmount ?? 0n;
-      const fmtStaked = Number(ethers.formatUnits(rawStaked, 6)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const fmtYield = Number(ethers.formatUnits(pYield, 6)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const fmtBal = Number(ethers.formatUnits(bal, 6)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const staked = ethers.formatUnits(uInfo[0], 6);
+      const reward = ethers.formatUnits(pYield, 6);
+      const wallet = ethers.formatUnits(bal, 6);
 
-      setStakedBalance(fmtStaked);
-      setPendingReward(fmtYield);
-      setWalletUSDT(fmtBal);
-      setClearanceTier(sbtValid || isVerified ? `TIER ${tier > 0n ? tier.toString() : "1"} VERIFIED` : "UNVERIFIED");
+      setStakedBalance(staked);
+      setPendingReward(reward);
+      setWalletUSDT(wallet);
+
+      if (sbtValid) {
+        const tierNum = Number(tier);
+        setClearanceTier(tierNum === 1 ? "TIER 1 (RETAIL)" : tierNum === 2 ? "TIER 2 (INSTITUTIONAL)" : "VERIFIED");
+      } else {
+        setClearanceTier("UNVERIFIED");
+      }
       setIsLoading(false);
     } catch (err) {
-      console.error("Live RPC sync error:", err);
+      console.error("Direct RPC polling failed:", err);
       setIsLoading(false);
     }
-  }, [account, isVerified]);
+  }, [account]);
 
-  // Authentication Gate Redirect Enforcement
+  // Sync balances and trigger auto network switcher on dashboard entry
   useEffect(() => {
     if (!isConnected) {
       router.replace("/");
@@ -108,6 +118,42 @@ export default function DashboardPage() {
       addLog("Orchestrator_Agent", "INFO", `Custody account synchronized with HashKey Mainnet reserve.`);
     }
   }, [isConnected, router, fetchOnChainData, addLog]);
+
+  // Load verified investors from backend API & localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const loadInvestors = async () => {
+      let backendList = [];
+      try {
+        const res = await fetch("http://localhost:8000/api/v1/registry/investors");
+        if (res.ok) backendList = await res.json();
+      } catch {}
+
+      let customList = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("verified_investor_")) {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key));
+            if (parsed && parsed.address) customList.push(parsed);
+          } catch {}
+        }
+      }
+
+      const defaultList = [
+        { address: "0x50F9F043500eC3c3FB733B94F2EC27a9030e00EF", full_name: "Satoshi Nakamoto", corporate_entity: "Nakamoto Holdings LLC", jurisdiction: "El Salvador" },
+        { address: "0x8D84bcFfc08E9a9C88d64d6680549Ab1919032A0", full_name: "Dwayne Michael Carter Jr.", corporate_entity: "Young Money Entertainment", jurisdiction: "United States" },
+        { address: "0xe69324550feC48171a1Aa11Dc9b076144e777dFe", full_name: "Akira Toriyama", corporate_entity: "Bird Studio Corp.", jurisdiction: "Japan" }
+      ];
+
+      const mergedMap = new Map();
+      [...defaultList, ...backendList, ...customList].forEach(item => {
+        if (item && item.address) mergedMap.set(item.address.toLowerCase(), item);
+      });
+      setVerifiedInvestorsList(Array.from(mergedMap.values()));
+    };
+    loadInvestors();
+  }, [account]);
 
   // Connect to live SSE telemetry stream if backend active
   useEffect(() => {
@@ -349,13 +395,53 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Treasury Control Cap */}
-          <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 flex flex-col justify-between flex-1">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Institutional Treasury Operations</h2>
-              <p className="text-sm text-slate-600 mb-8 leading-relaxed">
-                Execute instant corporate deposits, monitor automated yield distributions, and authorize regulatory-compliant payouts directly against HashKey Testnet contracts.
-              </p>
+          {/* Verified Investors Card */}
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 flex flex-col justify-between flex-1">
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">Verified Investors</h2>
+                </div>
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
+                  {verifiedInvestorsList.length} Active Mandates
+                </span>
+              </div>
+
+              {/* Verified Investors Table */}
+              <div className="overflow-x-auto border border-slate-200/80 rounded-xl max-h-[220px] overflow-y-auto bg-slate-50/50 shadow-inner">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-100/80 text-[10px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 backdrop-blur-md">
+                      <th className="py-2.5 px-3.5">Corporate Entity</th>
+                      <th className="py-2.5 px-3.5">Legal Representative</th>
+                      <th className="py-2.5 px-3.5">Jurisdiction</th>
+                      <th className="py-2.5 px-3.5">Wallet Address</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/60 text-xs font-medium text-slate-700">
+                    {verifiedInvestorsList.map((inv, idx) => (
+                      <tr key={idx} className="hover:bg-white transition-colors">
+                        <td className="py-3 px-3.5 font-bold text-slate-900 flex items-center space-x-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                          <span>{inv.corporate_entity || "Private Entity"}</span>
+                        </td>
+                        <td className="py-3 px-3.5 text-slate-600 font-sans">{inv.full_name || "Authorized Signatory"}</td>
+                        <td className="py-3 px-3.5">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase bg-slate-200/70 text-slate-700 border border-slate-300/50">
+                            {inv.jurisdiction || "Global"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3.5 font-mono text-[11px] text-slate-500">
+                          <span className="bg-white px-2 py-1 rounded border border-slate-200 shadow-3xs font-semibold text-slate-700" title={inv.address}>
+                            {inv.address ? `${inv.address.slice(0, 6)}...${inv.address.slice(-4)}` : "N/A"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

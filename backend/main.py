@@ -40,9 +40,33 @@ w3 = Web3(Web3.HTTPProvider(HASHKEY_TESTNET_RPC))
 # Telemetry queue
 telemetry_queue: asyncio.Queue = asyncio.Queue()
 
-# In-memory demo registry tracking verified institutions
+# In-memory demo registry tracking verified institutions & investors
+verified_investors: Dict[str, Dict[str, str]] = {
+    "0x50f9f043500ec3c3fb733b94f2ec27a9030e00ef": {
+        "address": "0x50F9F043500eC3c3FB733B94F2EC27a9030e00EF",
+        "full_name": "Satoshi Nakamoto",
+        "corporate_entity": "Nakamoto Holdings LLC",
+        "jurisdiction": "El Salvador"
+    },
+    "0x8d84bcffc08e9a9c88d64d6680549ab1919032a0": {
+        "address": "0x8D84bcFfc08E9a9C88d64d6680549Ab1919032A0",
+        "full_name": "Dwayne Michael Carter Jr.",
+        "corporate_entity": "Young Money Entertainment",
+        "jurisdiction": "United States"
+    },
+    "0xe69324550fec48171a1aa11dc9b076144e777dfe": {
+        "address": "0xe69324550feC48171a1Aa11Dc9b076144e777dFe",
+        "full_name": "Akira Toriyama",
+        "corporate_entity": "Bird Studio Corp.",
+        "jurisdiction": "Japan"
+    }
+}
+
 verified_registry: Dict[str, bool] = {
-    "0x85f52c53478cd87f571ce18a4a6e43aebb5da9d3": True
+    "0x85f52c53478cd87f571ce18a4a6e43aebb5da9d3": True,
+    "0x50f9f043500ec3c3fb733b94f2ec27a9030e00ef": True,
+    "0x8d84bcffc08e9a9c88d64d6680549ab1919032a0": True,
+    "0xe69324550fec48171a1aa11dc9b076144e777dfe": True
 }
 
 class MandateVerificationRequest(BaseModel):
@@ -75,15 +99,19 @@ async def startup_event():
 @app.get("/health")
 async def health_check():
     return {
-        "status": "ok",
+        "status": "healthy",
         "chain_id": HASHKEY_TESTNET_CHAIN_ID,
         "rpc_connected": w3.is_connected()
     }
 
+@app.get("/api/v1/registry/investors")
+async def get_verified_investors():
+    return list(verified_investors.values())
+
 @app.get("/api/v1/registry/check-status")
 async def check_registry_status(address: str):
     addr_clean = address.lower()
-    return {"isVerified": verified_registry.get(addr_clean, False)}
+    return {"isVerified": verified_registry.get(addr_clean, False) or addr_clean in verified_investors}
 
 SBT_REGISTRY_ADDR = os.getenv("SBT_REGISTRY_ADDRESS", "0x76a545Ad068173e5B1C111A57d6576926EDa1C77")
 SBT_ISSUE_ABI = [{
@@ -98,6 +126,12 @@ SBT_ISSUE_ABI = [{
 async def verify_registry_user(payload: KYCVerificationRequest):
     addr_clean = payload.address.lower()
     verified_registry[addr_clean] = True
+    verified_investors[addr_clean] = {
+        "address": Web3.to_checksum_address(payload.address),
+        "full_name": payload.full_name,
+        "corporate_entity": payload.corporate_entity,
+        "jurisdiction": payload.jurisdiction
+    }
     tx_hash_hex = "0x"
     try:
         pk = os.getenv("WALLET_PRIVATE_KEY", "0x1dc25f78f7c2bfd04d7272e3f4b7c223cc0d6a95c9c8508c1709778d84b2fed6")
