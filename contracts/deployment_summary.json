@@ -2,11 +2,11 @@
   "network": "HashKey Chain Mainnet",
   "chainId": 177,
   "rpcUrl": "https://mainnet.hsk.xyz",
-  "deployer": "0x85F52C53478CD87f571cE18a4a6e43AeBB5DA9D3",
-  "timestamp": "2026-06-27T17:10:00Z",
+  "deployer": "0xe69324550feC48171a1Aa11Dc9b076144e777dFe",
+  "timestamp": "2026-06-28T02:35:00Z",
   "contracts": {
-    "mockUSDT": "0x7AE9a2BdDa9b827483be932a6BE1372867B460c7",
-    "SBTRegistry": "0x7E2130deE7c8716b6188255c4800486eD708862E",
-    "CompliantYieldVault": "0xaeeb9155C287f469C53bcA564954F485a6D7eeA7"
+    "mockUSDT": "0xF0e9f136cb74045020671836ee8dC894E2671b59",
+    "SBTRegistry": "0x76a545Ad068173e5B1C111A57d6576926EDa1C77",
+    "CompliantYieldVault": "0x82223DaFAD9233c52718435DA4690DE75aA7EA84"
   }
 }
