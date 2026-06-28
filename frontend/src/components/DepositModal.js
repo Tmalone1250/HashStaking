@@ -20,8 +20,17 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
   const [amountInput, setAmountInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [fauceting, setFauceting] = useState(false);
+  const [depositStep, setDepositStep] = useState(0); // 0: idle, 1: pre-check, 2: allowance, 3: deposit, 4: success, -1: error
+  const [statusMsg, setStatusMsg] = useState("");
 
   if (!isOpen) return null;
+
+  const handleCloseModal = () => {
+    if (submitting) return;
+    setDepositStep(0);
+    setStatusMsg("");
+    onClose();
+  };
 
   // Query live balance and set to Max
   const handleSetMax = async () => {
@@ -85,6 +94,8 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
     }
 
     setSubmitting(true);
+    setDepositStep(1);
+    setStatusMsg("Step 1/3: Validating regulatory KYC & balance...");
     addLog("Orchestrator_Agent", "INFO", `Validating dynamic deposit submission of ${amountInput} USDT...`);
 
     try {
@@ -94,8 +105,10 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
       const onChainValid = await readReg.hasValidSBT(account);
 
       if (!onChainValid && !isVerified) {
-        addLog("SBTRegistry", "WARNING", "Transaction Blocked - Missing Regulatory Identity SBT");
-        alert("Transaction Blocked: Your account lacks a valid KYC Regulatory Identity SBT on HashKey Testnet.");
+        const errMsg = "Transaction Blocked: Missing Regulatory Identity SBT";
+        addLog("SBTRegistry", "WARNING", errMsg);
+        setDepositStep(-1);
+        setStatusMsg(errMsg);
         setSubmitting(false);
         return;
       }
@@ -106,8 +119,10 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
       const parsedAmount = ethers.parseUnits(amountInput, 6); // 6 decimals (amount * 10^6)
 
       if (parsedAmount > bal) {
-        addLog("CompliantYieldVault", "WARNING", "Deposit aborted: Amount exceeds current custody balance.");
-        alert("Validation Error: Amount exceeds current custody balance. Please use Faucet.");
+        const errMsg = "Validation Error: Amount exceeds custody balance";
+        addLog("CompliantYieldVault", "WARNING", errMsg);
+        setDepositStep(-1);
+        setStatusMsg(errMsg);
         setSubmitting(false);
         return;
       }
@@ -115,6 +130,8 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
       // 3. Network Alignment
       const switched = await ensureHashKeyNetwork();
       if (!switched) {
+        setDepositStep(-1);
+        setStatusMsg("Network synchronization failed or cancelled.");
         setSubmitting(false);
         return;
       }
@@ -124,29 +141,48 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
       const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
 
       // 4. Token Allowance
+      setDepositStep(2);
+      setStatusMsg("Step 2/3: Authorizing token allowance...");
       addLog("mockUSDT", "INFO", `Authorizing USDT token spending allowance (${amountInput} USDT)...`);
       const approveTx = await usdtContract.approve(VAULT_ADDR, parsedAmount);
       await approveTx.wait();
 
       // 5. Vault Deposit with Error Capture
+      setDepositStep(3);
+      setStatusMsg("Step 3/3: Broadcasting deposit to vault...");
       addLog("CompliantYieldVault", "INFO", `Broadcasting deposit(${parsedAmount.toString()}) to HashKey Chain...`);
       const depTx = await vaultContract.deposit(parsedAmount);
       await depTx.wait();
 
+      setDepositStep(4);
+      setStatusMsg("Deposit Successful!");
       addLog("CompliantYieldVault", "INFO", `Successfully deposited ${amountInput} USDT into institutional reserve.`);
       await onSuccess();
-      onClose();
+      
+      setTimeout(() => {
+        onClose();
+        setDepositStep(0);
+        setStatusMsg("");
+      }, 1800);
     } catch (err) {
       console.error("Deposit submission error:", err);
       const reason = err.shortMessage || err.reason || err.message || "Unknown execution revert";
+      let displayErr = reason;
       if (reason.toLowerCase().includes("allowance")) {
+        displayErr = "Deposit Failed: Insufficient Allowance";
         addLog("CompliantYieldVault", "WARNING", "[Error]: Deposit Failed - Insufficient Allowance");
-      } else if (reason.toLowerCase().includes("sbt") || reason.toLowerCase().includes("verified") || reason.toLowerCase().includes("gate")) {
+      } else if (reason.toLowerCase().includes("sbt") || reason.toLowerCase().includes("verified") || reason.toLowerCase().includes("gate") || reason.toLowerCase().includes("missing")) {
+        displayErr = "Deposit Failed: Regulatory Compliance Gate Reverted";
         addLog("CompliantYieldVault", "WARNING", "[Error]: Deposit Failed - Compliance Gate Reversion");
+      } else if (reason.toLowerCase().includes("user rejected") || reason.toLowerCase().includes("rejected")) {
+        displayErr = "Deposit Cancelled: Transaction rejected by wallet";
+        addLog("CompliantYieldVault", "WARNING", "[Error]: Transaction rejected by wallet");
       } else {
+        displayErr = `Deposit Failed: ${reason.slice(0, 65)}`;
         addLog("CompliantYieldVault", "WARNING", `[Error]: Deposit Failed - ${reason}`);
       }
-      alert(`Deposit Failed: ${reason}`);
+      setDepositStep(-1);
+      setStatusMsg(displayErr);
     } finally {
       setSubmitting(false);
     }
@@ -156,7 +192,7 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-8 max-w-md w-full relative">
         <button
-          onClick={onClose}
+          onClick={handleCloseModal}
           disabled={submitting}
           className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
         >
@@ -184,7 +220,13 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
                 required
                 placeholder="0.00"
                 value={amountInput}
-                onChange={(e) => setAmountInput(e.target.value)}
+                onChange={(e) => {
+                  setAmountInput(e.target.value);
+                  if (depositStep === -1) {
+                    setDepositStep(0);
+                    setStatusMsg("");
+                  }
+                }}
                 className="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-base font-mono font-bold focus:outline-none focus:border-emerald-500 bg-slate-50 text-slate-900"
               />
               <span className="absolute right-4 top-3.5 text-xs font-bold text-slate-400">USDT</span>
@@ -203,7 +245,38 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
             </button>
           </div>
 
-          <div className="pt-4">
+          {/* Dynamic Status Progress Bar */}
+          {depositStep !== 0 && (
+            <div className="pt-2 transition-all animate-fadeIn">
+              <div className="flex justify-between items-center text-xs font-bold mb-1.5">
+                <span className={depositStep === -1 ? "text-rose-600 truncate max-w-[280px]" : depositStep === 4 ? "text-emerald-600" : "text-slate-700"}>
+                  {statusMsg}
+                </span>
+                {depositStep > 0 && depositStep < 4 && (
+                  <span className="text-slate-500 font-mono">{depositStep === 1 ? "33%" : depositStep === 2 ? "66%" : "90%"}</span>
+                )}
+                {depositStep === 4 && <span className="text-emerald-600 font-mono">100%</span>}
+                {depositStep === -1 && <span className="text-rose-600 font-mono">Failed</span>}
+              </div>
+              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                <div
+                  className={`h-full transition-all duration-500 rounded-full ${
+                    depositStep === -1
+                      ? "w-full bg-rose-500"
+                      : depositStep === 1
+                      ? "w-1/3 bg-blue-500 animate-pulse"
+                      : depositStep === 2
+                      ? "w-2/3 bg-amber-500 animate-pulse"
+                      : depositStep === 3
+                      ? "w-11/12 bg-indigo-500 animate-pulse"
+                      : "w-full bg-emerald-500"
+                  }`}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2">
             <button
               type="submit"
               disabled={submitting || !amountInput}
