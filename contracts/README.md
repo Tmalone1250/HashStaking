@@ -5,9 +5,9 @@ Institutional-grade, regulatory-compliant staking architecture deployed on **Has
 ## 📜 Deployed Live Contract Addresses (`https://mainnet.hsk.xyz`)
 | Contract | Address | Explorer Link |
 | :--- | :--- | :--- |
-| **`mockUSDT`** | `0x7AE9a2BdDa9b827483be932a6BE1372867B460c7` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0x7AE9a2BdDa9b827483be932a6BE1372867B460c7) |
-| **`SBTRegistry`** | `0x7E2130deE7c8716b6188255c4800486eD708862E` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0x7E2130deE7c8716b6188255c4800486eD708862E) |
-| **`CompliantYieldVault`** | `0xaeeb9155C287f469C53bcA564954F485a6D7eeA7` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0xaeeb9155C287f469C53bcA564954F485a6D7eeA7) |
+| **`mockUSDT`** | `0xF0e9f136cb74045020671836ee8dC894E2671b59` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0xF0e9f136cb74045020671836ee8dC894E2671b59) |
+| **`SBTRegistry`** | `0x76a545Ad068173e5B1C111A57d6576926EDa1C77` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0x76a545Ad068173e5B1C111A57d6576926EDa1C77) |
+| **`CompliantYieldVault`** | `0x82223DaFAD9233c52718435DA4690DE75aA7EA84` | [View on HashKey Explorer](https://explorer.hsk.xyz/address/0x82223DaFAD9233c52718435DA4690DE75aA7EA84) |
 
 ## 🏗️ Core Smart Contract Architecture
 * **`CompliantYieldVault.sol`**: The primary yield management engine. Features:

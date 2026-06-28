@@ -85,13 +85,11 @@ async def check_registry_status(address: str):
     addr_clean = address.lower()
     return {"isVerified": verified_registry.get(addr_clean, False)}
 
-SBT_REGISTRY_ADDR = os.getenv("SBT_REGISTRY_ADDRESS", "0x7E2130deE7c8716b6188255c4800486eD708862E")
+SBT_REGISTRY_ADDR = os.getenv("SBT_REGISTRY_ADDRESS", "0x76a545Ad068173e5B1C111A57d6576926EDa1C77")
 SBT_ISSUE_ABI = [{
-    "constant": False,
-    "inputs": [{"name": "user", "type": "address"}, {"name": "tier", "type": "uint256"}, {"name": "expiry", "type": "uint256"}],
-    "name": "issueSBT",
+    "inputs": [{"name": "account", "type": "address"}, {"name": "tier", "type": "uint256"}, {"name": "status", "type": "bool"}],
+    "name": "setVerificationStatus",
     "outputs": [],
-    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
 }]
@@ -102,14 +100,13 @@ async def verify_registry_user(payload: KYCVerificationRequest):
     verified_registry[addr_clean] = True
     tx_hash_hex = "0x"
     try:
-        pk = "0xff3c8594e09146bc50fd0f47760b5ceb170a5a39475595428f7d938a9a7d9cba"
+        pk = os.getenv("WALLET_PRIVATE_KEY", "0x1dc25f78f7c2bfd04d7272e3f4b7c223cc0d6a95c9c8508c1709778d84b2fed6")
         account = w3.eth.account.from_key(pk)
         reg_contract = w3.eth.contract(address=Web3.to_checksum_address(SBT_REGISTRY_ADDR), abi=SBT_ISSUE_ABI)
         target_addr = Web3.to_checksum_address(payload.address)
-        expiry = int(time.time()) + 31536000
         
         nonce = w3.eth.get_transaction_count(account.address, "pending")
-        tx = reg_contract.functions.issueSBT(target_addr, 1, expiry).build_transaction({
+        tx = reg_contract.functions.setVerificationStatus(target_addr, 1, True).build_transaction({
             'from': account.address,
             'nonce': nonce,
             'gas': 200000,

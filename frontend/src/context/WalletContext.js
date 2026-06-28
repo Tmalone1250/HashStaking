@@ -3,9 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 
-const REGISTRY_ADDR = process.env.NEXT_PUBLIC_SBT_REGISTRY_ADDRESS || "0x7E2130deE7c8716b6188255c4800486eD708862E";
+const REGISTRY_ADDR = process.env.NEXT_PUBLIC_SBT_REGISTRY_ADDRESS || "0x76a545Ad068173e5B1C111A57d6576926EDa1C77";
 const REGISTRY_ABI = [
-  "function balanceOf(address owner) view returns (uint256)",
   "function hasValidSBT(address user) view returns (bool)"
 ];
 const HSK_TESTNET_RPC = process.env.NEXT_PUBLIC_HASHKEY_RPC_URL || "https://mainnet.hsk.xyz";
@@ -26,11 +25,7 @@ export function WalletProvider({ children }) {
     try {
       const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);
       const regContract = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, rpc);
-      const [bal, valid] = await Promise.all([
-        regContract.balanceOf(target),
-        regContract.hasValidSBT(target)
-      ]);
-      const holdsSBT = bal > 0n || valid;
+      const holdsSBT = await regContract.hasValidSBT(target);
       setIsVerified(holdsSBT);
       return holdsSBT;
     } catch (err) {
