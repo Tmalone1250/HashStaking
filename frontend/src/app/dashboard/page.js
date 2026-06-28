@@ -56,7 +56,7 @@ export default function DashboardPage() {
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
   const [telemetryLogs, setTelemetryLogs] = useState([
-    { id: 1, timestamp: new Date().toLocaleTimeString(), agent: "System", level: "INFO", message: "Connecting to HashKey Testnet RPC (Chain ID 133)..." }
+    { id: 1, timestamp: new Date().toLocaleTimeString(), agent: "System", level: "INFO", message: "Connecting to HashKey Mainnet RPC (Chain ID 177)..." }
   ]);
 
   const addLog = useCallback((agent, level, message) => {
@@ -105,7 +105,7 @@ export default function DashboardPage() {
       router.replace("/");
     } else {
       fetchOnChainData();
-      addLog("Orchestrator_Agent", "INFO", `Custody account synchronized with HashKey Testnet reserve.`);
+      addLog("Orchestrator_Agent", "INFO", `Custody account synchronized with HashKey Mainnet reserve.`);
     }
   }, [isConnected, router, fetchOnChainData, addLog]);
 
@@ -141,17 +141,17 @@ export default function DashboardPage() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  // Helper to ensure wallet is on HashKey Chain Testnet (Chain ID 133 / 0x85)
+  // Helper to ensure wallet is on HashKey Chain Mainnet (Chain ID 177 / 0xb1)
   const ensureHashKeyNetwork = async () => {
     if (!window.ethereum) return false;
     try {
       const chainId = await window.ethereum.request({ method: "eth_chainId" });
-      if (chainId !== "0x85" && chainId !== 133 && chainId !== "133") {
-        addLog("Network_Agent", "INFO", "Prompting wallet switch to HashKey Chain Testnet (Chain ID 133)...");
+      if (chainId !== "0xb1" && chainId !== 177 && chainId !== "177") {
+        addLog("Network_Agent", "INFO", "Prompting wallet switch to HashKey Chain Mainnet (Chain ID 177)...");
         try {
           await window.ethereum.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x85" }],
+            params: [{ chainId: "0xb1" }],
           });
         } catch (switchError) {
           if (switchError.code === 4902 || switchError.message?.includes("4902") || switchError.message?.includes("Unrecognized")) {
@@ -159,11 +159,11 @@ export default function DashboardPage() {
               method: "wallet_addEthereumChain",
               params: [
                 {
-                  chainId: "0x85",
-                  chainName: "HashKey Chain Testnet",
+                  chainId: "0xb1",
+                  chainName: "HashKey Chain Mainnet",
                   nativeCurrency: { name: "HashKey Eco Points", symbol: "HSK", decimals: 18 },
                   rpcUrls: [HSK_TESTNET_RPC],
-                  blockExplorerUrls: [HSK_TESTNET_RPC],
+                  blockExplorerUrls: ["https://explorer.hsk.xyz"],
                 },
               ],
             });
@@ -175,7 +175,7 @@ export default function DashboardPage() {
       return true;
     } catch (err) {
       console.error("Network switch rejected or failed:", err);
-      alert("Please switch your Web3 Wallet network to HashKey Chain Testnet (Chain ID 133) to interact with contracts.");
+      alert("Please switch your Web3 Wallet network to HashKey Chain Mainnet (Chain ID 177) to interact with contracts.");
       return false;
     }
   };
@@ -396,7 +396,7 @@ export default function DashboardPage() {
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="text-sm font-bold tracking-tight text-slate-900 font-mono">Live Activity & Audit Stream</span>
             </div>
-            <span className="text-[10px] font-mono text-slate-400">Chain ID: 133</span>
+            <span className="text-[10px] font-mono text-slate-400">Chain ID: 177</span>
           </div>
 
           <div className="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-3 max-h-[500px] bg-slate-50/30">
@@ -414,7 +414,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="p-3 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-500 text-center font-mono font-medium">
-            ● Connected to Live HashKey Testnet Contracts
+            ● Connected to Live HashKey Mainnet Contracts
           </div>
         </div>
       </main>
