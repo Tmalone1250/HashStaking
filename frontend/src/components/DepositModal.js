@@ -143,20 +143,22 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
       // 4. Token Allowance
       setDepositStep(2);
       setStatusMsg("Step 2/3: Authorizing token allowance...");
-      addLog("mockUSDT", "INFO", `Authorizing USDT token spending allowance (${amountInput} USDT)...`);
+      addLog("mockUSDT", "INFO", `Authorizing USDT token spending allowance (${amountInput} USDT)...`, { contractAddress: USDT_ADDR });
       const approveTx = await usdtContract.approve(VAULT_ADDR, parsedAmount);
+      addLog("mockUSDT", "INFO", `Allowance confirmed on-chain. [Tx: ${approveTx.hash}]`, { txHash: approveTx.hash, contractAddress: USDT_ADDR });
       await approveTx.wait();
 
       // 5. Vault Deposit with Error Capture
       setDepositStep(3);
       setStatusMsg("Step 3/3: Broadcasting deposit to vault...");
-      addLog("CompliantYieldVault", "INFO", `Broadcasting deposit(${parsedAmount.toString()}) to HashKey Chain...`);
+      addLog("CompliantYieldVault", "INFO", `Broadcasting deposit(${parsedAmount.toString()}) to HashKey Mainnet...`, { contractAddress: VAULT_ADDR });
       const depTx = await vaultContract.deposit(parsedAmount);
+      addLog("CompliantYieldVault", "INFO", `Deposit transaction broadcasted. [Tx: ${depTx.hash}]`, { txHash: depTx.hash, contractAddress: VAULT_ADDR });
       await depTx.wait();
 
       setDepositStep(4);
       setStatusMsg("Deposit Successful!");
-      addLog("CompliantYieldVault", "INFO", `Successfully deposited ${amountInput} USDT into institutional reserve.`);
+      addLog("CompliantYieldVault", "INFO", `Successfully deposited ${amountInput} USDT into institutional reserve. [Vault: ${VAULT_ADDR} | Tx: ${depTx.hash}]`, { txHash: depTx.hash, contractAddress: VAULT_ADDR });
       await onSuccess();
       
       setTimeout(() => {

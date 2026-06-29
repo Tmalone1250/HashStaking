@@ -257,15 +257,17 @@ export default function DashboardPage() {
         await mintTx.wait();
       }
 
-      addLog("mockUSDT", "INFO", "Authorizing custody vault transfer allowance...");
+      addLog("mockUSDT", "INFO", "Authorizing custody vault transfer allowance...", { contractAddress: USDT_ADDR });
       const approveTx = await usdtContract.approve(VAULT_ADDR, amount);
+      addLog("mockUSDT", "INFO", `Allowance confirmed on-chain. [Tx: ${approveTx.hash}]`, { txHash: approveTx.hash, contractAddress: USDT_ADDR });
       await approveTx.wait();
 
-      addLog("CompliantYieldVault", "INFO", "Broadcasting injectYieldRewards transaction to HashKey Chain...");
+      addLog("CompliantYieldVault", "INFO", "Broadcasting injectYieldRewards transaction to HashKey Mainnet...", { contractAddress: VAULT_ADDR });
       const tx = await vaultContract.injectYieldRewards(amount);
+      addLog("CompliantYieldVault", "INFO", `Yield injection broadcasted. [Tx: ${tx.hash}]`, { txHash: tx.hash, contractAddress: VAULT_ADDR });
       await tx.wait();
 
-      addLog("CompliantYieldVault", "INFO", `Successfully injected ${ethers.formatUnits(amount, 6)} USDT yield into institutional reserve.`);
+      addLog("CompliantYieldVault", "INFO", `Successfully injected ${ethers.formatUnits(amount, 6)} USDT yield into institutional reserve. [Vault: ${VAULT_ADDR} | Tx: ${tx.hash}]`, { txHash: tx.hash, contractAddress: VAULT_ADDR });
       await fetchOnChainData();
     } catch (err) {
       console.error("Injection error:", err);
@@ -302,11 +304,12 @@ export default function DashboardPage() {
       const signer = await provider.getSigner();
       const vaultContract = new ethers.Contract(VAULT_ADDR, VAULT_ABI, signer);
 
-      addLog("CompliantYieldVault", "INFO", "Broadcasting withdrawal harvest transaction...");
+      addLog("CompliantYieldVault", "INFO", "Broadcasting withdrawal harvest transaction...", { contractAddress: VAULT_ADDR });
       const tx = await vaultContract.withdraw(staked);
+      addLog("CompliantYieldVault", "INFO", `Withdrawal transaction broadcasted. [Tx: ${tx.hash}]`, { txHash: tx.hash, contractAddress: VAULT_ADDR });
       await tx.wait();
 
-      addLog("CompliantYieldVault", "INFO", "Institutional payout settled directly to custody account (net of 3% fee reserve).");
+      addLog("CompliantYieldVault", "INFO", `Institutional payout settled directly to custody account (net of 3% fee reserve). [Vault: ${VAULT_ADDR} | Tx: ${tx.hash}]`, { txHash: tx.hash, contractAddress: VAULT_ADDR });
       await fetchOnChainData();
     } catch (err) {
       console.error(err);
@@ -492,9 +495,29 @@ export default function DashboardPage() {
                   <span className="text-sky-700 font-bold">[{log.agent}]</span>
                   <span>{log.timestamp}</span>
                 </div>
-                <div className={log.level === "WARNING" ? "text-rose-600 font-bold" : "text-slate-700 leading-relaxed"}>
+                <div className={log.level === "WARNING" ? "text-rose-600 font-bold break-words" : "text-slate-700 leading-relaxed break-words"}>
                   {log.message}
                 </div>
+                {log.meta && (log.meta.txHash || log.meta.contractAddress) && (
+                  <div className="mt-2 pt-2 border-t border-slate-100/80 text-[10px] space-y-1.5 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 font-mono">
+                    {log.meta.contractAddress && (
+                      <div className="flex items-center justify-between text-slate-600 gap-2">
+                        <span className="font-bold text-slate-400 shrink-0">Contract:</span>
+                        <a href={`https://explorer.hsk.xyz/address/${log.meta.contractAddress}`} target="_blank" rel="noreferrer" className="text-sky-600 hover:text-sky-700 underline font-semibold truncate" title={log.meta.contractAddress}>
+                          {log.meta.contractAddress}
+                        </a>
+                      </div>
+                    )}
+                    {log.meta.txHash && (
+                      <div className="flex items-center justify-between text-slate-600 gap-2">
+                        <span className="font-bold text-slate-400 shrink-0">Tx Hash:</span>
+                        <a href={`https://explorer.hsk.xyz/tx/${log.meta.txHash}`} target="_blank" rel="noreferrer" className="text-emerald-600 hover:text-emerald-700 underline font-bold truncate" title={log.meta.txHash}>
+                          {log.meta.txHash}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
