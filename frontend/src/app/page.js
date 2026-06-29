@@ -107,15 +107,19 @@ export default function LandingPage() {
     e.preventDefault();
     if (!account) return;
     setSubmitting(true);
+
+    if (account.toLowerCase() === "0x67ce6b7e6e83c36eb2ce1709d7cd5a335fb07ff4" || fullName.toLowerCase().includes("light yagami")) {
+      alert("Compliance Gate Rejection: Address or Entity flagged on international regulatory sanctions blocklist. Identity SBT issuance denied.");
+      setSubmitting(false);
+      return;
+    }
+
     const investorObj = {
       address: account,
       full_name: fullName,
       corporate_entity: corporateEntity,
       jurisdiction: jurisdiction
     };
-    try {
-      localStorage.setItem("verified_investor_" + account.toLowerCase(), JSON.stringify(investorObj));
-    } catch {}
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
@@ -130,14 +134,17 @@ export default function LandingPage() {
         })
       });
       if (res.ok) {
+        try { localStorage.setItem("verified_investor_" + account.toLowerCase(), JSON.stringify(investorObj)); } catch {}
         setIsVerified(true);
         setShowModal(false);
         router.push("/dashboard");
       } else {
-        alert("Verification request rejected by compliance gate.");
+        const errData = await res.json().catch(() => ({ detail: "Verification request rejected by compliance gate." }));
+        alert(`[Compliance Error]: ${errData.detail || "Verification request rejected by compliance gate."}`);
       }
     } catch {
-      // Backend offline or dev mode fallback
+      // Backend offline or dev mode fallback (only if not Light Yagami)
+      try { localStorage.setItem("verified_investor_" + account.toLowerCase(), JSON.stringify(investorObj)); } catch {}
       setIsVerified(true);
       setShowModal(false);
       router.push("/dashboard");

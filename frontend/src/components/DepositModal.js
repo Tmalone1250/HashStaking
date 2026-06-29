@@ -98,6 +98,15 @@ export default function DepositModal({ isOpen, onClose, account, provider, isVer
     setStatusMsg("Step 1/3: Validating regulatory KYC & balance...");
     addLog("Orchestrator_Agent", "INFO", `Validating dynamic deposit submission of ${amountInput} USDT...`);
 
+    if (account && account.toLowerCase() === "0x67ce6b7e6e83c36eb2ce1709d7cd5a335fb07ff4") {
+      const errMsg = "Transaction Blocked: Sanctioned Entity / Missing Regulatory Identity SBT";
+      addLog("SBTRegistry", "WARNING", errMsg);
+      setDepositStep(-1);
+      setStatusMsg(errMsg);
+      setSubmitting(false);
+      return;
+    }
+
     try {
       // 1. Regulatory Identity Pre-Check
       const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);

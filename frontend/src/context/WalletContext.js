@@ -21,6 +21,11 @@ export function WalletProvider({ children }) {
   const verifyIdentityState = useCallback(async (userAddr) => {
     const target = userAddr || account;
     if (!target) return false;
+    if (target.toLowerCase() === "0x67ce6b7e6e83c36eb2ce1709d7cd5a335fb07ff4") {
+      setIsVerified(false);
+      setCheckingIdentity(false);
+      return false;
+    }
     setCheckingIdentity(true);
     try {
       const rpc = new ethers.JsonRpcProvider(HSK_TESTNET_RPC);

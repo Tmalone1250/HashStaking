@@ -146,9 +146,13 @@ export default function DashboardPage() {
         { address: "0xe69324550feC48171a1Aa11Dc9b076144e777dFe", full_name: "Akira Toriyama", corporate_entity: "Bird Studio Corp.", jurisdiction: "Japan" }
       ];
 
+      try { localStorage.removeItem("verified_investor_0x67ce6b7e6e83c36eb2ce1709d7cd5a335fb07ff4"); } catch {}
+
       const mergedMap = new Map();
       [...defaultList, ...backendList, ...customList].forEach(item => {
-        if (item && item.address) mergedMap.set(item.address.toLowerCase(), item);
+        if (item && item.address && item.address.toLowerCase() !== "0x67ce6b7e6e83c36eb2ce1709d7cd5a335fb07ff4" && !(item.full_name || "").toLowerCase().includes("light yagami")) {
+          mergedMap.set(item.address.toLowerCase(), item);
+        }
       });
       setVerifiedInvestorsList(Array.from(mergedMap.values()));
     };

@@ -111,6 +111,8 @@ async def get_verified_investors():
 @app.get("/api/v1/registry/check-status")
 async def check_registry_status(address: str):
     addr_clean = address.lower()
+    if addr_clean == "0x67ce6b7e6e83c36eb2ce1709d7cd5a335fb07ff4":
+        return {"isVerified": False}
     return {"isVerified": verified_registry.get(addr_clean, False) or addr_clean in verified_investors}
 
 SBT_REGISTRY_ADDR = os.getenv("SBT_REGISTRY_ADDRESS", "0x76a545Ad068173e5B1C111A57d6576926EDa1C77")
@@ -125,6 +127,8 @@ SBT_ISSUE_ABI = [{
 @app.post("/api/v1/registry/verify")
 async def verify_registry_user(payload: KYCVerificationRequest):
     addr_clean = payload.address.lower()
+    if addr_clean == "0x67ce6b7e6e83c36eb2ce1709d7cd5a335fb07ff4" or "light yagami" in payload.full_name.lower():
+        raise HTTPException(status_code=403, detail="Compliance Gate Rejection: Sanctioned / Blacklisted Entity. Identity SBT issuance denied.")
     verified_registry[addr_clean] = True
     verified_investors[addr_clean] = {
         "address": Web3.to_checksum_address(payload.address),
